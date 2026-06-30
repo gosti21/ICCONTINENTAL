@@ -1,0 +1,9 @@
+@import 'tailwindcss';
+@import 'flowbite/src/themes/default';
+@plugin "flowbite/plugin";
+@source "../node_modules/flowbite";
+
+@theme {
+  --color-banner: #5a2867;
+  --color-footer: #391042;
+}
