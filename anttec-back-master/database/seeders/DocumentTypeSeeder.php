@@ -8,9 +8,6 @@ use Illuminate\Database\Seeder;
 
 class DocumentTypeSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
         $documents = [
@@ -20,7 +17,7 @@ class DocumentTypeSeeder extends Seeder
         ];
 
         foreach ($documents as $document) {
-            DocumentType::create([
+            DocumentType::firstOrCreate([
                 'type' => $document
             ]);
         }

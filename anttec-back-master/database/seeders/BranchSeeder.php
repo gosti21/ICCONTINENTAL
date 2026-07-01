@@ -9,21 +9,20 @@ use Illuminate\Database\Seeder;
 
 class BranchSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        $branch = Branch::create([
+        $branch = Branch::firstOrCreate([
             'name' => 'Sucursal Principal',
             'email' => 'anttecshop@gmail.com',
         ]);
 
         $preix = Prefix::first();
 
-        $branch->phone()->create([
-            'number' => 964645037,
-            'prefix_id' => $preix->id
-        ]);
+        if ($branch->phone === null) {
+            $branch->phone()->create([
+                'number' => 964645037,
+                'prefix_id' => $preix->id
+            ]);
+        }
     }
 }

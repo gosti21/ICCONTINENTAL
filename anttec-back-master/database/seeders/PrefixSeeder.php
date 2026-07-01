@@ -8,12 +8,9 @@ use Illuminate\Database\Seeder;
 
 class PrefixSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        Prefix::create([
+        Prefix::firstOrCreate([
             'prefix' => '51'
         ]);
     }

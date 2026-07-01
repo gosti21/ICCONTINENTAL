@@ -10,34 +10,35 @@ use Illuminate\Support\Facades\Hash;
 
 class UserSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        $user = User::create([
-            'name' => 'Jhonny Stevens',
-            'last_name' => 'Romero Linares',
-            'email' => 'anttecshop@gmail.com',
-            'password' => Hash::make('admin12R@'),
-        ]);
+        $user = User::firstOrCreate(
+            ['email' => 'anttecshop@gmail.com'],
+            [
+                'name' => 'Jhonny Stevens',
+                'last_name' => 'Romero Linares',
+                'password' => Hash::make('admin12R@'),
+            ]
+        );
 
-        $employee = $user->employee()->create([
-            'salary' => '1500.00',
-            'position' => 'admin',
-            'branch_id' => 1,
-        ]);
+        if ($user->employee === null) {
+            $employee = $user->employee()->create([
+                'salary' => '1500.00',
+                'position' => 'admin',
+                'branch_id' => 1,
+            ]);
 
-        $employee->documentNumber()->create([
-            'number' => '71695916',
-            'document_type_id' => 1
-        ]);
+            $employee->documentNumber()->create([
+                'number' => '71695916',
+                'document_type_id' => 1
+            ]);
 
-        $preix = Prefix::first();
+            $preix = Prefix::first();
 
-        $employee->phone()->create([
-            'number' => 964645037,
-            'prefix_id' => $preix->id
-        ]);
+            $employee->phone()->create([
+                'number' => 964645037,
+                'prefix_id' => $preix->id
+            ]);
+        }
     }
 }

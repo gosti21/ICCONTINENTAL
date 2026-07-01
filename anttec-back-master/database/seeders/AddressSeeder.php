@@ -37,12 +37,15 @@ class AddressSeeder extends Seeder
             'max_delivery_days' => 1,
         ]);
 
-        Branch::findOrFail(1)->address()->create([
-            'favorite' => true,
-            'street' => 'Av. Giráldez NRO. 274 INT. T-2',
-            'street_number' => 3202,
-            'reference' => 'Centro de Negocios Giráldez',
-            'district_id' => $district->id,
-        ]);
-    }
+      $branch = Branch::findOrFail(1);
+
+        if ($branch->address === null) {
+            $branch->address()->create([
+                'favorite' => true,
+                'street' => 'Av. Giráldez NRO. 274 INT. T-2',
+                'street_number' => 3202,
+                'reference' => 'Centro de Negocios Giráldez',
+                'district_id' => $district->id,
+            ]);
+        }
 }
