@@ -48,4 +48,5 @@ class AddressSeeder extends Seeder
                 'district_id' => $district->id,
             ]);
         }
+    }
 }
