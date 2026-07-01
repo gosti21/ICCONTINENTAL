@@ -11,6 +11,8 @@ RUN composer install --no-dev --optimize-autoloader
 RUN chmod -R 775 storage bootstrap/cache
 
 COPY nginx.conf /etc/nginx/sites-available/default
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
+
 EXPOSE 10000
-CMD php artisan migrate --force && php artisan config:cache && \
-    php-fpm -D && nginx -g 'daemon off;'
+CMD ["/start.sh"]
