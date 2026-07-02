@@ -34,7 +34,43 @@ class RecommendationIAService
      */
     public function recommend(string $query, ?string $conversationId = null): array
     {
-        $localRecommendations = $this->buildLocalRecommendations($query);
+        $queryLower = Str::lower($query);
+        $queryTokens = $this->tokenizeQuery($query);
+        $inStockRecommendations = $this->buildLocalRecommendations($query, 4, true);
+        $similarWithoutStock = $this->buildLocalRecommendations($query, 3, false);
+
+        if (empty($inStockRecommendations) && !empty($similarWithoutStock)) {
+            return [
+                'type' => 'local_similar_no_stock',
+                'message' => $this->buildNoStockAlternativeMessage($similarWithoutStock, $query),
+                'products' => $similarWithoutStock,
+                'conversation_id' => $conversationId ?: Str::uuid()->toString(),
+                'question_count' => 1,
+            ];
+        }
+
+        $localRecommendations = $inStockRecommendations;
+
+        if (empty($localRecommendations)) {
+            return [
+                'type' => 'local_no_match',
+                'message' => $this->buildLocalMessage([], $query),
+                'products' => [],
+                'conversation_id' => $conversationId ?: Str::uuid()->toString(),
+                'question_count' => 1,
+            ];
+        }
+
+        $compatibilityQuestion = $this->buildCompatibilityQuestion($queryLower, $queryTokens);
+        if ($compatibilityQuestion) {
+            return [
+                'type' => 'local_consultative',
+                'message' => $this->buildConsultativeMessage($localRecommendations, $query, $compatibilityQuestion),
+                'products' => $localRecommendations,
+                'conversation_id' => $conversationId ?: Str::uuid()->toString(),
+                'question_count' => 1,
+            ];
+        }
 
         try {
             if ($this->openAiKey) {
@@ -130,12 +166,15 @@ class RecommendationIAService
         }
     }
 
-    protected function buildLocalRecommendations(string $query, int $limit = 3): array
+    protected function buildLocalRecommendations(string $query, int $limit = 4, bool $onlyInStock = true): array
     {
         $tokens = $this->tokenizeQuery($query);
+        $queryLower = Str::lower($query);
+        $isUpgradeIntent = $this->isUpgradeIntent($queryLower);
+        $queryContext = $this->buildQueryContext($queryLower, $tokens);
         $products = $this->repository->getAllForAI();
 
-        $scored = $products->map(function ($product) use ($tokens) {
+        $scored = $products->map(function ($product) use ($tokens, $isUpgradeIntent, $queryContext) {
             $name = (string) $product->name;
             $model = (string) $product->model;
             $brand = (string) ($product->brand?->name ?? '');
@@ -181,10 +220,36 @@ class RecommendationIAService
             }
 
             $specText = Str::lower($product->specifications->pluck('pivot.value')->implode(' '));
+            $featuresText = Str::lower(
+                $product->variants
+                    ->flatMap(fn ($variant) => $variant->optionProductValues)
+                    ->map(fn ($feature) => (string) ($feature->optionValue->description ?? ''))
+                    ->implode(' ')
+            );
+
             foreach ($tokens as $token) {
                 if (str_contains($specText, $token)) {
                     $score += 1.2;
                     $reasons[] = "coincide en especificaciones ({$token})";
+                }
+
+                if (str_contains($featuresText, $token)) {
+                    $score += 1.0;
+                    $reasons[] = "coincide en caracteristicas ({$token})";
+                }
+            }
+
+            $categoryAffinity = $this->calculateCategoryAffinity($fields, $specText, $featuresText, $queryContext);
+            if ($categoryAffinity > 0) {
+                $score += $categoryAffinity;
+                $reasons[] = 'coincide con el tipo de producto que buscas';
+            }
+
+            if ($isUpgradeIntent) {
+                $performanceScore = $this->estimatePerformanceScore($specText . ' ' . $featuresText);
+                if ($performanceScore > 0) {
+                    $score += $performanceScore;
+                    $reasons[] = 'tiene especificaciones de mayor rendimiento';
                 }
             }
 
@@ -211,6 +276,13 @@ class RecommendationIAService
                 ];
             })->values()->toArray();
 
+            $stockTotal = collect($variants)->sum('stock');
+            if ($stockTotal > 0) {
+                $score += 0.6;
+            } else {
+                $score -= 0.8;
+            }
+
             $normalized = min(99, (int) round($score * 12));
 
             return [
@@ -232,6 +304,10 @@ class RecommendationIAService
         $best = $scored
             ->sortByDesc('match_score')
             ->filter(fn ($item) => $item['match_score'] > 0)
+            ->when(
+                $onlyInStock,
+                fn ($collection) => $collection->filter(fn ($item) => collect($item['variants'] ?? [])->sum('stock') > 0)
+            )
             ->take($limit)
             ->values();
 
@@ -239,11 +315,7 @@ class RecommendationIAService
             return $best->all();
         }
 
-        return $scored
-            ->sortByDesc(fn ($item) => collect($item['variants'])->sum('stock'))
-            ->take($limit)
-            ->values()
-            ->all();
+        return [];
     }
 
     protected function tokenizeQuery(string $query): array
@@ -260,8 +332,133 @@ class RecommendationIAService
             ->map(fn ($token) => preg_replace('/[^\\p{L}\\p{N}]/u', '', (string) $token))
             ->filter(fn ($token) => filled($token) && mb_strlen($token) >= 2)
             ->reject(fn ($token) => in_array($token, $stopWords, true))
+            ->flatMap(function ($token) {
+                $expanded = [$token];
+
+                if (in_array($token, ['memoria', 'ram'], true)) {
+                    $expanded = [...$expanded, 'ram', 'memoria', 'ddr4', 'ddr5', 'mhz', 'gb'];
+                }
+
+                if (in_array($token, ['potente', 'rendimiento', 'rapida', 'rapido', 'mejor'], true)) {
+                    $expanded = [...$expanded, 'rendimiento', 'rapido', 'frecuencia', 'mhz', 'latencia'];
+                }
+
+                if (in_array($token, ['gaming', 'gamer'], true)) {
+                    $expanded = [...$expanded, 'gaming', 'gamer', 'rgb'];
+                }
+
+                return $expanded;
+            })
+            ->unique()
             ->values()
             ->all();
+    }
+
+    protected function isUpgradeIntent(string $query): bool
+    {
+        return $this->hasAnyKeyword($query, [
+            'mas potente', 'más potente', 'mas rapido', 'más rápido', 'mejor',
+            'upgrade', 'actualizar', 'rendir', 'rendimiento', 'superior', 'mas fuerte', 'más fuerte'
+        ]);
+    }
+
+    protected function hasAnyKeyword(string $text, array $keywords): bool
+    {
+        foreach ($keywords as $keyword) {
+            if (str_contains($text, $keyword)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    protected function buildQueryContext(string $queryLower, array $tokens): array
+    {
+        $keywordGroups = [
+            'ram' => ['ram', 'memoria', 'ddr4', 'ddr5', 'sodimm', 'dimm'],
+            'almacenamiento' => ['ssd', 'nvme', 'm2', 'sata', 'hdd', 'disco'],
+            'procesador' => ['procesador', 'cpu', 'ryzen', 'intel', 'core', 'i3', 'i5', 'i7', 'i9'],
+            'gpu' => ['gpu', 'grafica', 'video', 'rtx', 'gtx', 'radeon'],
+            'placa_madre' => ['placa', 'motherboard', 'mainboard', 'am4', 'am5', 'lga'],
+            'fuente' => ['fuente', 'psu', 'watt', '80plus', 'bronze', 'gold'],
+            'monitor' => ['monitor', 'pantalla', 'ips', 'hz', '144hz', '240hz'],
+            'mouse' => ['mouse', 'raton', 'dpi'],
+            'teclado' => ['teclado', 'keyboard', 'mecanico', 'switch'],
+            'audio' => ['audifono', 'headset', 'auricular', 'microfono'],
+            'laptop' => ['laptop', 'notebook', 'portatil'],
+        ];
+
+        $flatKeywords = [];
+        foreach ($keywordGroups as $groupKeywords) {
+            foreach ($groupKeywords as $keyword) {
+                if (str_contains($queryLower, $keyword) || in_array($keyword, $tokens, true)) {
+                    $flatKeywords[] = $keyword;
+                }
+            }
+        }
+
+        return [
+            'keywords' => array_values(array_unique($flatKeywords)),
+        ];
+    }
+
+    protected function calculateCategoryAffinity(array $fields, string $specText, string $featuresText, array $queryContext): float
+    {
+        $score = 0.0;
+        $keywords = $queryContext['keywords'] ?? [];
+
+        if (empty($keywords)) {
+            return $score;
+        }
+
+        $fieldText = implode(' ', [
+            $fields['name'] ?? '',
+            $fields['model'] ?? '',
+            $fields['brand'] ?? '',
+            $fields['category'] ?? '',
+            $fields['subcategory'] ?? '',
+            $fields['description'] ?? '',
+        ]);
+
+        foreach ($keywords as $keyword) {
+            if (str_contains($fieldText, $keyword)) {
+                $score += 1.8;
+            }
+
+            if (str_contains($specText, $keyword)) {
+                $score += 0.8;
+            }
+
+            if (str_contains($featuresText, $keyword)) {
+                $score += 0.7;
+            }
+        }
+
+        return $score;
+    }
+
+    protected function estimatePerformanceScore(string $text): float
+    {
+        $score = 0.0;
+
+        if (preg_match_all('/(\d{1,3})\s?gb/u', $text, $gbMatches)) {
+            $maxGb = max(array_map('intval', $gbMatches[1]));
+            $score += min(2.5, $maxGb / 16);
+        }
+
+        if (preg_match_all('/(\d{3,5})\s?mhz/u', $text, $mhzMatches)) {
+            $maxMhz = max(array_map('intval', $mhzMatches[1]));
+            $score += min(2.0, max(0, ($maxMhz - 2400) / 1200));
+        }
+
+        if (str_contains($text, 'ddr5')) {
+            $score += 1.5;
+        } elseif (str_contains($text, 'ddr4')) {
+            $score += 0.7;
+        }
+
+        return $score;
     }
 
     protected function buildMatchReason(array $reasons): string
@@ -276,19 +473,97 @@ class RecommendationIAService
     protected function buildLocalMessage(array $products, string $query): string
     {
         if (empty($products)) {
-            return 'No encontre productos que coincidan con tu consulta. Puedes intentar con otra descripcion mas especifica.';
+            return 'Por el momento no contamos con ese producto en nuestro catalogo, pero puedes mirar nuestros productos por si te animas por algo mas.';
         }
 
         $first = $products[0];
         $price = collect($first['variants'] ?? [])->min('price');
         $priceText = is_numeric($price) ? ' desde S/ ' . number_format((float) $price, 2) : '';
 
+        $topSpecs = collect($first['specifications'] ?? [])
+            ->filter(fn ($spec) => filled($spec['name'] ?? null) && filled($spec['value'] ?? null))
+            ->take(2)
+            ->map(fn ($spec) => ($spec['name'] ?? '') . ': ' . ($spec['value'] ?? ''))
+            ->implode(' | ');
+
+        $specText = $topSpecs ? " Especificaciones clave: {$topSpecs}." : '';
+
         return sprintf(
-            'Para "%s" te sugiero %s%s. Tambien te dejo mas opciones relacionadas para que compares.',
+            'Para "%s" te sugiero %s%s.%s Tambien te dejo opciones similares de tu catalogo para que compares rendimiento/precio.',
             $query,
             $first['name'] ?? 'este producto',
-            $priceText
+            $priceText,
+            $specText
         );
+    }
+
+    protected function buildNoStockAlternativeMessage(array $products, string $query): string
+    {
+        $first = $products[0] ?? null;
+
+        if (!$first) {
+            return 'Por el momento no contamos con ese producto en stock, pero puedes mirar nuestros productos por si te animas por algo mas.';
+        }
+
+        $brand = $first['brand'] ?? 'esa marca';
+        $name = $first['name'] ?? 'este articulo';
+
+        return sprintf(
+            'Hay varios tipos para "%s" y te recomendaria revisar opciones de %s. Por el momento no contamos con stock inmediato, pero un articulo con especificaciones similares es %s y podria servirte como referencia tecnica.',
+            $query,
+            $brand,
+            $name
+        );
+    }
+
+    protected function buildCompatibilityQuestion(string $queryLower, array $tokens): ?string
+    {
+        $hasRamIntent = $this->hasAnyKeyword($queryLower, ['ram', 'memoria'])
+            || count(array_intersect($tokens, ['ram', 'memoria', 'ddr4', 'ddr5', 'sodimm', 'dimm'])) > 0;
+
+        if ($hasRamIntent) {
+            $hasRamCompatibilityData = $this->hasAnyKeyword($queryLower, [
+                'ddr3', 'ddr4', 'ddr5', 'sodimm', 'dimm', 'laptop', 'notebook', 'portatil',
+                'desktop', 'escritorio', 'pc de escritorio'
+            ]);
+
+            if (!$hasRamCompatibilityData) {
+                return 'Antes de recomendarte la mejor RAM, dime si es para laptop o PC de escritorio y que tipo soporta tu placa (DDR4 o DDR5).';
+            }
+        }
+
+        $hasStorageIntent = $this->hasAnyKeyword($queryLower, ['ssd', 'hdd', 'disco', 'almacenamiento', 'nvme']);
+        if ($hasStorageIntent) {
+            $hasStorageCompatibilityData = $this->hasAnyKeyword($queryLower, ['m2', 'm.2', 'nvme', 'sata', 'pcie', '2.5']);
+            if (!$hasStorageCompatibilityData) {
+                return 'Para recomendarte mejor almacenamiento, confirmame si buscas M.2 NVMe o SSD/HDD SATA de 2.5 pulgadas.';
+            }
+        }
+
+        $hasCpuIntent = $this->hasAnyKeyword($queryLower, ['procesador', 'cpu', 'intel', 'ryzen']);
+        if ($hasCpuIntent) {
+            $hasCpuCompatibilityData = $this->hasAnyKeyword($queryLower, ['am4', 'am5', 'lga1200', 'lga1700', 'socket']);
+            if (!$hasCpuCompatibilityData) {
+                return 'Para evitar incompatibilidades, indicame el socket de tu placa madre (por ejemplo AM4, AM5 o LGA1700).';
+            }
+        }
+
+        $hasMotherboardIntent = $this->hasAnyKeyword($queryLower, ['placa', 'placa madre', 'motherboard', 'mainboard']);
+        if ($hasMotherboardIntent) {
+            $hasMotherboardData = $this->hasAnyKeyword($queryLower, ['am4', 'am5', 'lga', 'ddr4', 'ddr5', 'chipset']);
+            if (!$hasMotherboardData) {
+                return 'Para sugerirte una placa madre correcta, cuentame que procesador usaras y si tu RAM es DDR4 o DDR5.';
+            }
+        }
+
+        return null;
+    }
+
+    protected function buildConsultativeMessage(array $products, string $query, string $compatibilityQuestion): string
+    {
+        $baseMessage = $this->buildLocalMessage($products, $query);
+
+        return $baseMessage . ' ' . $compatibilityQuestion;
     }
 
     protected function buildOpenAiPrompt(string $query, array $products): string
@@ -311,7 +586,7 @@ class RecommendationIAService
 
         return "Consulta del cliente: {$query}\n" .
             "Productos recomendados desde base de datos:\n{$catalogSummary}\n" .
-            'Responde con recomendacion breve, clara y orientada a compra, mencionando por que conviene la opcion principal. Usa unicamente productos del listado.';
+                'Responde con recomendacion breve, clara y tecnica orientada a compra. Si el cliente pide algo mas potente, explica mejora de rendimiento y compatibilidad de forma simple. Usa unicamente productos del listado.';
     }
 
     /**
