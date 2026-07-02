@@ -118,7 +118,9 @@ class OrderSService
                 return [
                     'session_token' => $tokenSession,
                     'order_id' => $order->id,
-                    'total' => $order->total
+                    'total' => $order->total,
+                    'merchant_id' => config('integrations.niubiz.merchant_id'),
+                    'action_url' => route('orders.confirmOrder', ['order_id' => $order->id]),
                 ];
             });
         } catch (\Exception $e) {
