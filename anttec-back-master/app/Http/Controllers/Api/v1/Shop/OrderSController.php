@@ -45,12 +45,15 @@ class OrderSController extends Controller
 
     public function confirmOrder(Request $request)
     {
+        $frontendBaseUrl = rtrim($request->query('return_url', config('app.url_front')), '/');
+        $checkoutUrl = $frontendBaseUrl . '/checkout/payment';
+
         $orderId = $request->query('order_id');
         if (!$orderId) {
             return view('Niubiz.payment-result', [
                 'success' => false,
                 'message' => 'Datos incompletos: order_id no recibido',
-                'redirectUrl' => config('app.url_front') . '/checkout/payment'
+                'redirectUrl' => $checkoutUrl,
             ]);
         }
 
@@ -59,7 +62,7 @@ class OrderSController extends Controller
             return view('Niubiz.payment-result', [
                 'success' => false,
                 'message' => 'Datos incompletos: transactionToken no recibido',
-                'redirectUrl' => config('app.url_front') . '/checkout/payment'
+                'redirectUrl' => $checkoutUrl,
             ]);
         }
 
@@ -76,7 +79,7 @@ class OrderSController extends Controller
                     'orderId' => $orderId,
                     'transactionId' => $res['dataMap']['TRANSACTION_ID'] ?? null,
                     'voucherPath' => $res['voucher_path'] ?? null,
-                    'redirectUrl' => config('app.url_front')
+                    'redirectUrl' => $frontendBaseUrl,
                 ]);
             } else {
                 $actionDescription = data_get($res, 'error.action_description', 'Pago rechazado');
@@ -86,7 +89,7 @@ class OrderSController extends Controller
                     'message' => 'Pago rechazado',
                     'description' => $actionDescription,
                     'orderId' => $orderId,
-                    'redirectUrl' => config('app.url_front') . '/checkout/payment'
+                    'redirectUrl' => $checkoutUrl,
                 ]);
             }
         } catch (\Exception $e) {
@@ -94,7 +97,7 @@ class OrderSController extends Controller
                 'success' => false,
                 'message' => 'Error al procesar el pago',
                 'description' => $e->getMessage(),
-                'redirectUrl' => config('app.url_front') . '/checkout/payment'
+                'redirectUrl' => $checkoutUrl,
             ]);
         }
     }
