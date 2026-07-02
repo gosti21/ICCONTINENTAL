@@ -40,6 +40,9 @@ const openPaymentForm = async () => {
 
     sessionStorage.setItem('checkoutRoute', window.location.pathname)
 
+      const actionUrl = new URL(props.actionUrl)
+      actionUrl.searchParams.set('return_url', window.location.origin)
+
     window.VisanetCheckout.configure({
       sessiontoken: props.sessionToken,
       channel: 'web',
@@ -52,7 +55,7 @@ const openPaymentForm = async () => {
       merchantlogo: merchantLogo,
       formbuttoncolor: '#753089',
       method: 'POST',
-      action: props.actionUrl,
+      action: actionUrl.toString(),
     })
 
     window.VisanetCheckout.open()
