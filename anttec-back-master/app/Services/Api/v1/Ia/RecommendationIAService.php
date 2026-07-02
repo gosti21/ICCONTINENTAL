@@ -36,8 +36,10 @@ class RecommendationIAService
     {
         $queryLower = Str::lower($query);
         $queryTokens = $this->tokenizeQuery($query);
-        $inStockRecommendations = $this->buildLocalRecommendations($query, 4, true);
-        $similarWithoutStock = $this->buildLocalRecommendations($query, 3, false);
+        $requestedLimit = $this->resolveRequestedLimit($queryLower);
+
+        $inStockRecommendations = $this->buildLocalRecommendations($query, $requestedLimit, true);
+        $similarWithoutStock = $this->buildLocalRecommendations($query, min(3, $requestedLimit), false);
 
         if (empty($inStockRecommendations) && !empty($similarWithoutStock)) {
             return [
@@ -192,29 +194,34 @@ class RecommendationIAService
             ];
 
             $score = 0.0;
+            $relevanceSignals = 0;
             $reasons = [];
 
             foreach ($tokens as $token) {
                 if (str_contains($fields['name'], $token)) {
                     $score += 3.0;
+                    $relevanceSignals++;
                     $reasons[] = "coincide en nombre ({$token})";
                     continue;
                 }
 
                 if (str_contains($fields['brand'], $token) || str_contains($fields['model'], $token)) {
                     $score += 2.5;
+                    $relevanceSignals++;
                     $reasons[] = "coincide en marca/modelo ({$token})";
                     continue;
                 }
 
                 if (str_contains($fields['category'], $token) || str_contains($fields['subcategory'], $token)) {
                     $score += 2.0;
+                    $relevanceSignals++;
                     $reasons[] = "coincide en categoria ({$token})";
                     continue;
                 }
 
                 if (str_contains($fields['description'], $token)) {
                     $score += 1.2;
+                    $relevanceSignals++;
                     $reasons[] = "coincide en descripcion ({$token})";
                 }
             }
@@ -230,11 +237,13 @@ class RecommendationIAService
             foreach ($tokens as $token) {
                 if (str_contains($specText, $token)) {
                     $score += 1.2;
+                    $relevanceSignals++;
                     $reasons[] = "coincide en especificaciones ({$token})";
                 }
 
                 if (str_contains($featuresText, $token)) {
                     $score += 1.0;
+                    $relevanceSignals++;
                     $reasons[] = "coincide en caracteristicas ({$token})";
                 }
             }
@@ -242,6 +251,7 @@ class RecommendationIAService
             $categoryAffinity = $this->calculateCategoryAffinity($fields, $specText, $featuresText, $queryContext);
             if ($categoryAffinity > 0) {
                 $score += $categoryAffinity;
+                $relevanceSignals++;
                 $reasons[] = 'coincide con el tipo de producto que buscas';
             }
 
@@ -297,6 +307,7 @@ class RecommendationIAService
                 'variants' => $variants,
                 'similarity_score' => round($score, 2),
                 'match_score' => $normalized,
+                'relevance_signals' => $relevanceSignals,
                 'match_reason' => $this->buildMatchReason($reasons),
             ];
         });
@@ -304,6 +315,7 @@ class RecommendationIAService
         $best = $scored
             ->sortByDesc('match_score')
             ->filter(fn ($item) => $item['match_score'] > 0)
+            ->filter(fn ($item) => ($item['relevance_signals'] ?? 0) > 0)
             ->when(
                 $onlyInStock,
                 fn ($collection) => $collection->filter(fn ($item) => collect($item['variants'] ?? [])->sum('stock') > 0)
@@ -586,7 +598,26 @@ class RecommendationIAService
 
         return "Consulta del cliente: {$query}\n" .
             "Productos recomendados desde base de datos:\n{$catalogSummary}\n" .
-                'Responde con recomendacion breve, clara y tecnica orientada a compra. Si el cliente pide algo mas potente, explica mejora de rendimiento y compatibilidad de forma simple. Usa unicamente productos del listado.';
+                'Responde con recomendacion breve, clara y tecnica orientada a compra. Si el cliente pide algo mas potente, explica mejora de rendimiento y compatibilidad de forma simple. Usa unicamente productos del listado. No afirmes que algo es "lo mas nuevo del mercado" si ese dato no existe explicitamente en el catalogo.';
+    }
+
+    protected function resolveRequestedLimit(string $queryLower): int
+    {
+        if (
+            str_contains($queryLower, 'solo 1') ||
+            str_contains($queryLower, 'una sugerencia') ||
+            str_contains($queryLower, 'solo una') ||
+            str_contains($queryLower, 'solo un producto')
+        ) {
+            return 1;
+        }
+
+        if (preg_match('/(\d+)\s+(sugerencia|sugerencias|producto|productos)/u', $queryLower, $matches)) {
+            $requested = (int) ($matches[1] ?? 4);
+            return max(1, min(6, $requested));
+        }
+
+        return 4;
     }
 
     /**
