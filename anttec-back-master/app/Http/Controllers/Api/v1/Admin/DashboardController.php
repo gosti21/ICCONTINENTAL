@@ -49,9 +49,9 @@ DB::raw("TO_CHAR(created_at, 'YYYY-MM-01') as month_date"),
         DB::raw("SUM(total) as total")
     )
     ->where('created_at', '>=', now()->subMonths(6))
-    ->groupBy(
-DB::raw("TO_CHAR(created_at, 'Mon') as month"),
-DB::raw("TO_CHAR(created_at, 'YYYY-MM-01') as month_date"),
+      ->groupBy(
+        DB::raw("TO_CHAR(created_at, 'Mon')"),
+        DB::raw("TO_CHAR(created_at, 'YYYY-MM-01')"),
     )
     ->orderBy(DB::raw("month_date"))
     ->get();
