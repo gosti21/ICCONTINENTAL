@@ -17,6 +17,8 @@ const isLoadingToken = ref(false)
 const sessionToken = ref<string | null>(null)
 const order_id = ref<string>('')
 const total = ref<number>(0.00)
+const merchantId = ref<string>('')
+const actionUrl = ref<string>('')
 const showPaymentButton = ref(false)
 const niubizScriptLoaded = ref(false)
 const niubizInitialized = ref(false)
@@ -112,12 +114,18 @@ const merchantLogo = isLocal
 const preInitializeNiubiz = () => {
   if (!window.VisanetCheckout || niubizInitialized.value) return
 
+  const configuredMerchantId = (import.meta.env.VITE_NIUBIZ_MERCHANT_ID || '').trim()
+  if (!configuredMerchantId) {
+    console.warn('⚠️ Merchant ID de Niubiz no configurado para la precarga del SDK')
+    return
+  }
+
   try {
     // Configurar con datos dummy para que Niubiz cargue todos sus servicios
     const dummyConfig: NiubizConfig = {
       sessiontoken: 'dummy-token',
       channel: 'web',
-      merchantid: import.meta.env.VITE_NIUBIZ_MERCHANT_ID,
+      merchantid: configuredMerchantId,
       purchasenumber: 'INIT-0000',
       amount: 1,
       expirationminutes: '20',
@@ -208,6 +216,12 @@ const handleGetToken = async () => {
     sessionToken.value = res.session_token
     order_id.value = String(res.order_id)
     total.value = Number(Number(res.total).toFixed(2))
+    merchantId.value = (res.merchant_id || '').trim()
+    actionUrl.value = res.action_url
+
+    if (!merchantId.value || !actionUrl.value) {
+      throw new Error('La configuracion de Niubiz no llego completa desde el backend')
+    }
 
     if (!niubizScriptLoaded.value || !window.VisanetCheckout) {
       await loadNiubizScript()
@@ -250,6 +264,8 @@ const handleGetToken = async () => {
         :session-token="sessionToken"
         :purchase-number="order_id"
         :amount="total"
+        :merchant-id="merchantId"
+        :action-url="actionUrl"
         :script-loaded="niubizScriptLoaded"
       />
     </template>

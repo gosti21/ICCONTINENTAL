@@ -6,6 +6,8 @@ interface Props {
   sessionToken: string
   purchaseNumber: string
   amount: number
+  merchantId: string
+  actionUrl: string
   scriptLoaded: boolean
   disabled?: boolean
 }
@@ -41,7 +43,7 @@ const openPaymentForm = async () => {
     window.VisanetCheckout.configure({
       sessiontoken: props.sessionToken,
       channel: 'web',
-      merchantid: import.meta.env.VITE_NIUBIZ_MERCHANT_ID,
+      merchantid: props.merchantId,
       purchasenumber: String(props.purchaseNumber),
       amount: props.amount,
       expirationminutes: '20',
@@ -50,7 +52,7 @@ const openPaymentForm = async () => {
       merchantlogo: merchantLogo,
       formbuttoncolor: '#753089',
       method: 'POST',
-      action: import.meta.env.VITE_API_URL +  `/orders/confirm?order_id=${props.purchaseNumber}`,
+      action: props.actionUrl,
     })
 
     window.VisanetCheckout.open()
