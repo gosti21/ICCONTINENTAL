@@ -120,7 +120,7 @@ class OrderSService
                     'order_id' => $order->id,
                     'total' => $order->total,
                     'merchant_id' => config('integrations.niubiz.merchant_id'),
-                    'action_url' => route('orders.confirmOrder', ['order_id' => $order->id]),
+                    'action_url' => route('api.orders.confirmOrder', ['order_id' => $order->id]),
                 ];
             });
         } catch (\Exception $e) {
