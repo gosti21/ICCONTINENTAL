@@ -111,13 +111,15 @@ class NiubizService
         try {
             $forceApproved = (bool) config('integrations.niubiz.force_approved', false);
             $isLocal = app()->environment('local');
+            $isSandboxGateway = str_contains((string) config('integrations.niubiz.url_api'), 'apisandbox');
 
-            // Permite validar el flujo de checkout en desarrollo sin depender del sandbox del adquirente.
-            if ($forceApproved && $isLocal) {
+            // Permite validar el flujo de checkout en desarrollo o sandbox sin depender del adquirente.
+            if ($forceApproved && ($isLocal || $isSandboxGateway)) {
                 $mockTransactionId = 'MOCK-' . now()->format('YmdHis') . '-' . $order->id;
 
                 Log::warning('Niubiz mock approval enabled', [
                     'order_id' => $order->id,
+                    'mode' => $isLocal ? 'local' : 'sandbox',
                 ]);
 
                 return [
