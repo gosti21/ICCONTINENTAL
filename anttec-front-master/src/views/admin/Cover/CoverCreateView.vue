@@ -138,7 +138,6 @@ const onSubmit = handleSubmit(async (values, { resetForm }) => {
     }
 
     await coverService.create(formData)
-    Swal.close()
 
     useSweetAlert({
       title: 'Portada creado',
@@ -152,7 +151,16 @@ const onSubmit = handleSubmit(async (values, { resetForm }) => {
     await nextTick()
     initDatepickers()
   } catch (err) {
-    Swal.close()
+    if (axios.isAxiosError(err) && err.code === 'ECONNABORTED') {
+      useSweetAlert({
+        title: 'Tiempo de espera agotado',
+        text: 'Render tardó demasiado en responder. Intenta nuevamente en unos segundos.',
+        icon: 'error',
+        timer: 0,
+      })
+      return
+    }
+
     if (axios.isAxiosError(err) && err.response?.status === 422) {
       const validationErrors = err.response.data.errors
       serverErrors.value = validationErrors
@@ -168,6 +176,8 @@ const onSubmit = handleSubmit(async (values, { resetForm }) => {
       icon: 'error',
       timer: 0,
     })
+  } finally {
+    Swal.close()
   }
 })
 </script>

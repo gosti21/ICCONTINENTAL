@@ -33,6 +33,7 @@ class CoverService {
 
   async create(data: FormData): Promise<coverI> {
     const res = await this.api.post<ApiListResponseI<coverI>>('/admin/covers', data, {
+      timeout: 30000,
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -45,6 +46,7 @@ class CoverService {
     data.append('_method', 'PATCH')
 
     const res = await this.api.post<ApiListResponseI<coverI>>(`/admin/covers/${id}`, data, {
+      timeout: 30000,
       headers: {
         'Content-Type': 'multipart/form-data',
       },

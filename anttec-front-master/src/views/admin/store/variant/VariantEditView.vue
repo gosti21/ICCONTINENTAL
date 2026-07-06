@@ -74,7 +74,6 @@ const onSubmit = handleSubmit(async (values) => {
     })
     await variantService.update(values as variantEditDTO, id)
 
-    Swal.close()
     useSweetAlert({
       title: 'Variante actualizada',
       text: 'La variante ha sido actualizada con éxito',
@@ -84,7 +83,16 @@ const onSubmit = handleSubmit(async (values) => {
     // ✅ Recargar los datos actualizados
     await loadVariant()
   } catch (err) {
-    Swal.close()
+    if (axios.isAxiosError(err) && err.code === 'ECONNABORTED') {
+      useSweetAlert({
+        title: 'Tiempo de espera agotado',
+        text: 'Render tardó demasiado en responder. Intenta nuevamente en unos segundos.',
+        icon: 'error',
+        timer: 0,
+      })
+      return
+    }
+
     if (axios.isAxiosError(err) && err.response?.status === 422) {
       const validationErrors = err.response.data.errors
       serverErrors.value = validationErrors
@@ -100,6 +108,8 @@ const onSubmit = handleSubmit(async (values) => {
       icon: 'error',
       timer: 0,
     })
+  } finally {
+    Swal.close()
   }
 })
 

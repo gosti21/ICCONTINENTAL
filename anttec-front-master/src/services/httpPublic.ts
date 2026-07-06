@@ -1,9 +1,11 @@
 import { useAuthStore } from '@/stores/useAuthStore'
 import { handleHttpError } from '@/utils/errorHandler'
 import axios from 'axios'
+import { API_BASE_URL, API_TIMEOUT_MS } from './apiConfig'
 
 const httpPublic = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: API_BASE_URL,
+  timeout: API_TIMEOUT_MS,
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',

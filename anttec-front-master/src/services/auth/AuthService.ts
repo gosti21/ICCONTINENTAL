@@ -3,19 +3,19 @@ import type { registerDTO } from '@/DTOs/auth/RegisterDTO'
 import type { logoutI } from '@/interfaces/auth/LogoutInterface'
 import type { registerI } from '@/interfaces/auth/RegisterInterface'
 import { useAuthStore } from '@/stores/useAuthStore'
+import { API_BASE_URL, API_TIMEOUT_MS } from '@/services/apiConfig'
 import { handleApiError } from '@/utils/handleApiError'
 import type { AxiosInstance } from 'axios'
 import axios from 'axios'
 import type { loginI } from '../../interfaces/auth/LoginInterface'
-
-const urlApi = import.meta.env.VITE_API_URL
 
 class AuthService {
   private api: AxiosInstance
 
   constructor() {
     this.api = axios.create({
-      baseURL: `${urlApi}/auth`,
+      baseURL: `${API_BASE_URL}/auth`,
+      timeout: API_TIMEOUT_MS,
     })
   }
 

@@ -197,11 +197,7 @@ const onSubmit = handleSubmit(async (values) => {
       formData.append('image', values.image)
     }
 
-    for (const [key, value] of formData.entries()) {
-      console.log(key, value)
-    }
     await coverService.update(formData, id)
-    Swal.close()
 
     useSweetAlert({
       title: 'Portada actualizada',
@@ -209,7 +205,16 @@ const onSubmit = handleSubmit(async (values) => {
       icon: 'success',
     })
   } catch (err) {
-    Swal.close()
+    if (axios.isAxiosError(err) && err.code === 'ECONNABORTED') {
+      useSweetAlert({
+        title: 'Tiempo de espera agotado',
+        text: 'Render tardó demasiado en responder. Intenta nuevamente en unos segundos.',
+        icon: 'error',
+        timer: 0,
+      })
+      return
+    }
+
     if (axios.isAxiosError(err) && err.response?.status === 422) {
       const validationErrors = err.response.data.errors
       serverErrors.value = validationErrors
@@ -225,6 +230,8 @@ const onSubmit = handleSubmit(async (values) => {
       icon: 'error',
       timer: 0,
     })
+  } finally {
+    Swal.close()
   }
 })
 </script>
