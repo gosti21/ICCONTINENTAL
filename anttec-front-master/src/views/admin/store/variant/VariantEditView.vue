@@ -8,9 +8,17 @@ import type { variantI } from '@/interfaces/admin/variant/variantInterface'
 import { editVariantSchema } from '@/schemas/admin/variant/editVariantValidationSchema'
 import VariantService from '@/services/admin/VariantService'
 import axios from 'axios'
+import type { FilePondFile, FilePond as FilePondInstance } from 'filepond'
+import FilePondPluginFileValidateSize from 'filepond-plugin-file-validate-size'
+import FilePondPluginFileValidateType from 'filepond-plugin-file-validate-type'
+import FilePondPluginImageExifOrientation from 'filepond-plugin-image-exif-orientation'
+import FilePondPluginImagePreview from 'filepond-plugin-image-preview'
+import 'filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css'
+import 'filepond/dist/filepond.min.css'
 import Swal from 'sweetalert2'
 import { useForm } from 'vee-validate'
 import { onMounted, ref } from 'vue'
+import vueFilePond from 'vue-filepond'
 import { useRoute } from 'vue-router'
 
 const variantService = new VariantService()
@@ -21,6 +29,14 @@ const id = Array.isArray(route.params.id) ? route.params.id[0] : route.params.id
 const isLoading = ref(true)
 const serverErrors = ref<Record<string, string[]>>({})
 const variant = ref<variantI | null>(null)
+const filePondRef = ref<FilePondInstance | null>(null)
+
+const FilePond = vueFilePond(
+  FilePondPluginImagePreview,
+  FilePondPluginImageExifOrientation,
+  FilePondPluginFileValidateSize,
+  FilePondPluginFileValidateType,
+)
 
 useBreadcrumb(() => [
   { name: 'Dashboard', route: 'admin.dashboard' },
@@ -32,13 +48,22 @@ useBreadcrumb(() => [
   },
 ])
 
-const { meta, handleSubmit, errors, defineField, resetForm, setErrors } = useForm({
+const { meta, handleSubmit, errors, defineField, setFieldValue, resetForm, setErrors } = useForm({
   validationSchema: editVariantSchema,
 })
 
 const [sellingPrice, sellingPriceAttrs] = defineField('selling_price')
 const [purcharsePrice, purcharsePriceAttrs] = defineField('purcharse_price')
 const [stockMin, stockMinAttrs] = defineField('stock_min')
+
+const onUpdateFiles = (files: FilePondFile[]) => {
+  setFieldValue(
+    'images',
+    files.map((file) => ({
+      image: file.file,
+    })),
+  )
+}
 
 const loadVariant = async () => {
   try {
@@ -72,8 +97,22 @@ const onSubmit = handleSubmit(async (values) => {
       text: 'Procesando el formulario',
       icon: 'loading',
     })
-console.log(values)
-    await variantService.update(values as variantEditDTO, id)
+    const images = (values.images as { image: File | Blob }[] | undefined) ?? []
+
+    if (images.length > 0) {
+      const formData = new FormData()
+      formData.append('selling_price', String(values.selling_price))
+      formData.append('purcharse_price', String(values.purcharse_price))
+      formData.append('stock_min', String(values.stock_min))
+
+      images.forEach((img, index) => {
+        formData.append(`images[${index}][image]`, img.image)
+      })
+
+      await variantService.update(formData, id)
+    } else {
+      await variantService.update(values as variantEditDTO, id)
+    }
 
     Swal.close()
     useSweetAlert({
@@ -84,6 +123,8 @@ console.log(values)
 
     // ✅ Recargar los datos actualizados
     await loadVariant()
+    filePondRef.value?.removeFiles()
+    setFieldValue('images', [])
   } catch (err) {
     Swal.close()
     if (axios.isAxiosError(err) && err.response?.status === 422) {
@@ -219,6 +260,42 @@ onMounted(() => {
           <span class="text-red-400">{{ errors.stock_min }}</span>
           <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
             El sistema te alertará cuando el stock llegue a este nivel
+          </p>
+        </div>
+
+        <div class="mb-6">
+          <label class="block mb-2 font-medium text-gray-900 dark:text-gray-200">
+            Imagen actual
+          </label>
+          <div class="mb-3" v-if="variant?.img?.length">
+            <img
+              :src="variant.img[0].url"
+              alt="Imagen actual de la variante"
+              class="h-40 w-40 object-cover rounded border border-gray-300"
+            />
+          </div>
+          <p v-else class="text-sm text-gray-500 dark:text-gray-400 mb-2">
+            Esta variante no tiene imagen registrada.
+          </p>
+
+          <label class="block mb-2 font-medium text-gray-900 dark:text-gray-200">
+            Cambiar imagen
+          </label>
+          <FilePond
+            ref="filePondRef"
+            name="image"
+            allowMultiple="true"
+            allowFileTypeValidation="true"
+            :acceptedFileTypes="['image/*']"
+            allowImagePreview="true"
+            maxFileSize="15MB"
+            imagePreviewHeight="180"
+            allowReorder="true"
+            @updatefiles="onUpdateFiles"
+            labelIdle="Arrastra la imagen nueva o <span class='filepond--label-action'>Examinar</span>"
+          />
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            Si subes una nueva imagen y guardas, reemplazará la imagen actual de la variante.
           </p>
         </div>
 

@@ -43,8 +43,15 @@ class VariantService {
     return res.data.data
   }
 
-  async update(data: variantEditDTO, id: string): Promise<variantI> {
-    const res = await this.api.patch<ApiListResponseI<variantI>>(`/admin/variants/${id}`, data)
+  async update(data: variantEditDTO | FormData, id: string): Promise<variantI> {
+    const isFormData = data instanceof FormData
+    const res = await this.api.patch<ApiListResponseI<variantI>>(`/admin/variants/${id}`, data, {
+      headers: isFormData
+        ? {
+            'Content-Type': 'multipart/form-data',
+          }
+        : undefined,
+    })
     console.log(res.data.message)
     return res.data.data
   }

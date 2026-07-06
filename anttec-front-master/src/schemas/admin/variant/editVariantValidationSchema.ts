@@ -1,4 +1,4 @@
-import { number, object } from 'yup'
+import { array, mixed, number, object } from 'yup'
 
 export const editVariantSchema = object({
   selling_price: number()
@@ -27,4 +27,12 @@ export const editVariantSchema = object({
     .required('Stock mínimo es obligatorio')
     .integer('Debe ser un número entero')
     .moreThan(0, 'El stock mínimo debe ser mayor a 0'),
+
+  images: array()
+    .of(
+      object({
+        image: mixed<File | Blob>().required(),
+      }),
+    )
+    .optional(),
 })

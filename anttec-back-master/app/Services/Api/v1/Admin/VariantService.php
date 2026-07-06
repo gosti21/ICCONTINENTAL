@@ -106,7 +106,7 @@ class VariantService extends BaseService
         ]);
 
         $images = null;
-        if (isset($data['image'])) {
+        if (isset($data['images'])) {
             $images = [];
             foreach ($data['images'] as $image) {
                 $path = Storage::putFile('variants', $image['image']);

@@ -7,6 +7,7 @@ use App\Models\Variant;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class VariantRepository extends BaseRepository implements VariantInterface
 {
@@ -76,11 +77,16 @@ class VariantRepository extends BaseRepository implements VariantInterface
             }
 
             if (!empty($images)) {
+                foreach ($model->images as $oldImage) {
+                    Storage::delete($oldImage->path);
+                    $oldImage->delete();
+                }
+
                 foreach($images as $imagepath) {
-                    $model->images()->update([
+                    $model->images()->create([
                         'path' => $imagepath
                     ]);
-                };
+                }
             }
 
             if (!empty($variantFeatures)) {
