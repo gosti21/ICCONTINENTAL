@@ -9,6 +9,12 @@ const STOCK_FALLBACK_PATTERNS = [
   'no contamos con ese producto',
   'no hay stock',
   'sin stock',
+  'por el momento no contamos con ese producto en nuestro catalogo',
+  'por el momento no contamos con ese producto en nuestro catalgo',
+  'no contamos con ese producto en nuestro catalogo',
+  'no contamos con ese producto en nuestro catalgo',
+  'no encontrado en catalogo',
+  'no encontrado en catalgo',
 ]
 
 const INFO_KEYWORDS = [
@@ -38,6 +44,11 @@ const PURCHASE_KEYWORDS = [
   'garantia',
   'garantía',
 ]
+
+const GREETING_KEYWORDS = ['hola', 'holi', 'buenas', 'buenos dias', 'buenas tardes', 'hello']
+const HELP_KEYWORDS = ['ayuda', 'ayudame', 'qué puedes hacer', 'que puedes hacer']
+const THANKS_KEYWORDS = ['gracias', 'muchas gracias', 'thanks']
+const BYE_KEYWORDS = ['adios', 'hasta luego', 'nos vemos', 'bye']
 
 function normalizeText(value: string): string {
   return value
@@ -90,11 +101,72 @@ function buildEducationalFallback(query: string): string | null {
 
 function resolveAiMessage(query: string, response: chatRecommendI): string {
   const hasProducts = Boolean(response.products && response.products.length > 0)
-  if (hasProducts) return response.message
+  if (hasProducts && response.message?.trim()) return response.message
+
+  if (!response.message?.trim()) {
+    return (
+      buildEducationalFallback(query) ??
+      'Te ayudo con gusto. Puedes pedirme recomendaciones por presupuesto, uso o comparar componentes.'
+    )
+  }
 
   if (!isStockFallbackMessage(response.message)) return response.message
 
-  return buildEducationalFallback(query) ?? response.message
+  const educationalFallback = buildEducationalFallback(query)
+  if (educationalFallback) {
+    return educationalFallback
+  }
+
+  if (isInformationalQuestion(query)) {
+    return [
+      'No encontre un producto exacto para esa consulta, pero si puedo ayudarte con la parte tecnica.',
+      'Si quieres, te explico diferencias, compatibilidad o recomendaciones segun tu caso.',
+    ].join(' ')
+  }
+
+  return [
+    'No encontre ese producto exacto en catalogo por ahora.',
+    'Si quieres, te puedo recomendar alternativas parecidas.',
+    'Dime marca, presupuesto y para que lo usaras.',
+  ].join(' ')
+}
+
+function includesAnyKeyword(text: string, keywords: string[]): boolean {
+  return keywords.some((keyword) => text.includes(keyword))
+}
+
+function buildInteractiveLocalReply(query: string): string | null {
+  const normalized = normalizeText(query)
+
+  if (includesAnyKeyword(normalized, GREETING_KEYWORDS)) {
+    return [
+      'Hola, soy tu asistente de ANTTEC. Listo para ayudarte.',
+      'Puedes preguntarme, por ejemplo:',
+      '- "Recomiendame una RAM para gaming"',
+      '- "Que diferencia hay entre RAM y SSD"',
+      '- "Que mouse me recomiendas por 100 soles"',
+    ].join('\n')
+  }
+
+  if (includesAnyKeyword(normalized, HELP_KEYWORDS)) {
+    return [
+      'Puedo ayudarte en 3 cosas principales:',
+      '1) Recomendar productos por presupuesto y uso.',
+      '2) Explicar diferencias tecnicas entre componentes.',
+      '3) Buscar disponibilidad de productos en catalogo.',
+      'Si quieres, empezamos con: "tengo 300 soles para mejorar mi PC".',
+    ].join('\n')
+  }
+
+  if (includesAnyKeyword(normalized, THANKS_KEYWORDS)) {
+    return 'De nada. Si quieres, te puedo recomendar opciones segun tu presupuesto y tipo de uso.'
+  }
+
+  if (includesAnyKeyword(normalized, BYE_KEYWORDS)) {
+    return 'Perfecto. Cuando quieras, vuelves y te ayudo con cualquier consulta de productos.'
+  }
+
+  return null
 }
 
 export interface ChatMessage {
@@ -131,16 +203,28 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   async function sendMessage(query: string) {
-    if (!query.trim()) return
+    const normalizedQuery = query.trim()
+    if (!normalizedQuery) return
 
     // Agregar mensaje del usuario
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
       type: 'user',
-      content: query.trim(),
+      content: normalizedQuery,
       timestamp: new Date(),
     }
     messages.value.push(userMessage)
+
+    const localReply = buildInteractiveLocalReply(normalizedQuery)
+    if (localReply) {
+      messages.value.push({
+        id: `ai-local-${Date.now()}`,
+        type: 'ai',
+        content: localReply,
+        timestamp: new Date(),
+      })
+      return
+    }
 
     // Mostrar indicador de carga
     isLoading.value = true
@@ -148,14 +232,14 @@ export const useChatStore = defineStore('chat', () => {
     try {
       // Llamar a la IA
       const response: chatRecommendI = await iaService.chatRecommend(
-        query.trim(),
+        normalizedQuery,
         conversationId.value || undefined,
       )
 
       // Guardar conversation_id
       conversationId.value = response.conversation_id
 
-      const aiContent = resolveAiMessage(query.trim(), response)
+      const aiContent = resolveAiMessage(normalizedQuery, response)
 
       // Agregar respuesta de la IA
       const aiMessage: ChatMessage = {
@@ -173,7 +257,9 @@ export const useChatStore = defineStore('chat', () => {
       const errorMessage: ChatMessage = {
         id: `error-${Date.now()}`,
         type: 'ai',
-        content: 'Lo siento, hubo un error al procesar tu mensaje. Por favor, intenta de nuevo.',
+        content:
+          buildEducationalFallback(normalizedQuery) ??
+          'Ahora mismo no pude conectar con el asistente. Igual te puedo ayudar si me dices tu presupuesto y para que usaras el equipo.',
         timestamp: new Date(),
       }
       messages.value.push(errorMessage)
