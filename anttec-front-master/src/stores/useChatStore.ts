@@ -63,6 +63,28 @@ function isStockFallbackMessage(message: string): boolean {
   return STOCK_FALLBACK_PATTERNS.some((pattern) => normalized.includes(pattern))
 }
 
+function isNoProductsLikeMessage(message: string): boolean {
+  const normalized = normalizeText(message)
+
+  if (isStockFallbackMessage(message)) {
+    return true
+  }
+
+  const hasNoAvailabilityIntent =
+    normalized.includes('no contamos') ||
+    normalized.includes('no tenemos') ||
+    normalized.includes('sin disponibilidad') ||
+    normalized.includes('no disponible')
+
+  const talksAboutCatalogOrProducts =
+    normalized.includes('catalogo') ||
+    normalized.includes('catalgo') ||
+    normalized.includes('producto') ||
+    normalized.includes('productos')
+
+  return hasNoAvailabilityIntent && talksAboutCatalogOrProducts
+}
+
 function isInformationalQuestion(query: string): boolean {
   const normalized = normalizeText(query)
   const hasInfoIntent = INFO_KEYWORDS.some((keyword) => normalized.includes(keyword))
@@ -110,7 +132,14 @@ function resolveAiMessage(query: string, response: chatRecommendI): string {
     )
   }
 
-  if (!isStockFallbackMessage(response.message)) return response.message
+  const responseType = normalizeText(response.type || '')
+  const messageIsNoProducts = isNoProductsLikeMessage(response.message)
+  const typeSuggestsNoProducts =
+    responseType.includes('no_product') ||
+    responseType.includes('no-products') ||
+    responseType.includes('sin_product')
+
+  if (!messageIsNoProducts && !typeSuggestsNoProducts) return response.message
 
   const educationalFallback = buildEducationalFallback(query)
   if (educationalFallback) {
@@ -127,7 +156,7 @@ function resolveAiMessage(query: string, response: chatRecommendI): string {
   return [
     'No encontre ese producto exacto en catalogo por ahora.',
     'Si quieres, te puedo recomendar alternativas parecidas.',
-    'Dime marca, presupuesto y para que lo usaras.',
+    'Dime marca, presupuesto y para que lo usaras, y te propongo opciones reales.',
   ].join(' ')
 }
 
