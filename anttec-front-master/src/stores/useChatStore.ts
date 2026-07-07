@@ -121,6 +121,73 @@ function buildEducationalFallback(query: string): string | null {
   return null
 }
 
+function extractBudget(query: string): string | null {
+  const normalized = normalizeText(query)
+  const match = normalized.match(/(\d+[\.,]?\d*)\s*(soles|s\/|s\/\.|pen)/)
+  if (!match) return null
+  return match[1].replace(',', '.')
+}
+
+function detectCategory(query: string): string | null {
+  const normalized = normalizeText(query)
+
+  if (normalized.includes('mouse')) return 'mouse'
+  if (normalized.includes('teclado')) return 'teclado'
+  if (normalized.includes('audifono') || normalized.includes('headset')) return 'audifonos'
+  if (normalized.includes('monitor')) return 'monitor'
+  if (normalized.includes('ram')) return 'ram'
+  if (normalized.includes('ssd')) return 'ssd'
+  if (normalized.includes('procesador')) return 'procesador'
+  if (normalized.includes('placa') || normalized.includes('motherboard')) return 'placa madre'
+  if (normalized.includes('fuente')) return 'fuente de poder'
+
+  return null
+}
+
+function buildSalesAssistantReply(query: string): string {
+  const educational = buildEducationalFallback(query)
+  if (educational) {
+    return `${educational}\n\nSi quieres, tambien te propongo opciones segun tu presupuesto.`
+  }
+
+  const budget = extractBudget(query)
+  const category = detectCategory(query)
+
+  if (category && budget) {
+    return [
+      `Perfecto, te ayudo como vendedor para buscar un ${category} por S/ ${budget}.`,
+      'Para recomendarte bien, confirmame 2 cosas:',
+      '1) Uso principal (gaming, oficina, estudio o edicion).',
+      '2) Si prefieres alguna marca.',
+      'Con eso te paso opciones concretas y una recomendacion final.',
+    ].join('\n')
+  }
+
+  if (category) {
+    return [
+      `Excelente, te ayudo a elegir un ${category}.`,
+      'Dime tu presupuesto aproximado en soles y el uso principal.',
+      'Ejemplo: "quiero un mouse para gaming de 120 soles".',
+    ].join('\n')
+  }
+
+  if (budget) {
+    return [
+      `Genial, trabajemos con un presupuesto de S/ ${budget}.`,
+      'Que producto estas buscando exactamente (mouse, teclado, ram, ssd, monitor, etc.)?',
+      'Tambien dime el uso y te doy una recomendacion concreta.',
+    ].join('\n')
+  }
+
+  return [
+    'Te atiendo como vendedor y te ayudo a elegir la mejor opcion.',
+    'Para empezar, dime:',
+    '1) Que producto buscas.',
+    '2) Tu presupuesto en soles.',
+    '3) Para que lo usaras (gaming, oficina, estudio o edicion).',
+  ].join('\n')
+}
+
 function resolveAiMessage(query: string, response: chatRecommendI): string {
   // Priorizar respuestas conversacionales locales para evitar respuestas de catalogo en saludos.
   const localSmallTalkReply = buildInteractiveLocalReply(query)
@@ -132,10 +199,7 @@ function resolveAiMessage(query: string, response: chatRecommendI): string {
   if (hasProducts && response.message?.trim()) return response.message
 
   if (!response.message?.trim()) {
-    return (
-      buildEducationalFallback(query) ??
-      'Te ayudo con gusto. Puedes pedirme recomendaciones por presupuesto, uso o comparar componentes.'
-    )
+    return buildSalesAssistantReply(query)
   }
 
   const responseType = normalizeText(response.type || '')
@@ -147,23 +211,7 @@ function resolveAiMessage(query: string, response: chatRecommendI): string {
 
   if (!messageIsNoProducts && !typeSuggestsNoProducts) return response.message
 
-  const educationalFallback = buildEducationalFallback(query)
-  if (educationalFallback) {
-    return educationalFallback
-  }
-
-  if (isInformationalQuestion(query)) {
-    return [
-      'No encontre un producto exacto para esa consulta, pero si puedo ayudarte con la parte tecnica.',
-      'Si quieres, te explico diferencias, compatibilidad o recomendaciones segun tu caso.',
-    ].join(' ')
-  }
-
-  return [
-    'No encontre ese producto exacto en catalogo por ahora.',
-    'Si quieres, te puedo recomendar alternativas parecidas.',
-    'Dime marca, presupuesto y para que lo usaras, y te propongo opciones reales.',
-  ].join(' ')
+  return buildSalesAssistantReply(query)
 }
 
 function includesAnyKeyword(text: string, keywords: string[]): boolean {
@@ -292,9 +340,7 @@ export const useChatStore = defineStore('chat', () => {
       const errorMessage: ChatMessage = {
         id: `error-${Date.now()}`,
         type: 'ai',
-        content:
-          buildEducationalFallback(normalizedQuery) ??
-          'Ahora mismo no pude conectar con el asistente. Igual te puedo ayudar si me dices tu presupuesto y para que usaras el equipo.',
+        content: buildSalesAssistantReply(normalizedQuery),
         timestamp: new Date(),
       }
       messages.value.push(errorMessage)
