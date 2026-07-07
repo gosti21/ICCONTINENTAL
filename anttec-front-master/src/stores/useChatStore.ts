@@ -122,6 +122,12 @@ function buildEducationalFallback(query: string): string | null {
 }
 
 function resolveAiMessage(query: string, response: chatRecommendI): string {
+  // Priorizar respuestas conversacionales locales para evitar respuestas de catalogo en saludos.
+  const localSmallTalkReply = buildInteractiveLocalReply(query)
+  if (localSmallTalkReply) {
+    return localSmallTalkReply
+  }
+
   const hasProducts = Boolean(response.products && response.products.length > 0)
   if (hasProducts && response.message?.trim()) return response.message
 
