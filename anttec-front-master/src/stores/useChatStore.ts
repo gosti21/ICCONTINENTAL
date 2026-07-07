@@ -3,6 +3,100 @@ import { ref, computed } from 'vue'
 import type { chatRecommendI, productIAI } from '@/interfaces/Ia/ChatRecommendInterface'
 import IaService from '@/services/ia/IaService'
 
+const STOCK_FALLBACK_PATTERNS = [
+  'no tenemos ese producto en stock',
+  'no tenemos ese producto',
+  'no contamos con ese producto',
+  'no hay stock',
+  'sin stock',
+]
+
+const INFO_KEYWORDS = [
+  'diferencia',
+  'diferencias',
+  'comparar',
+  'comparacion',
+  'comparación',
+  'que es',
+  'qué es',
+  'explica',
+  'como funciona',
+  'cómo funciona',
+  'para que sirve',
+  'para qué sirve',
+]
+
+const PURCHASE_KEYWORDS = [
+  'precio',
+  'costo',
+  'stock',
+  'disponible',
+  'comprar',
+  'carrito',
+  'envio',
+  'envío',
+  'garantia',
+  'garantía',
+]
+
+function normalizeText(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+}
+
+function isStockFallbackMessage(message: string): boolean {
+  const normalized = normalizeText(message)
+  return STOCK_FALLBACK_PATTERNS.some((pattern) => normalized.includes(pattern))
+}
+
+function isInformationalQuestion(query: string): boolean {
+  const normalized = normalizeText(query)
+  const hasInfoIntent = INFO_KEYWORDS.some((keyword) => normalized.includes(keyword))
+  const hasPurchaseIntent = PURCHASE_KEYWORDS.some((keyword) => normalized.includes(keyword))
+
+  return hasInfoIntent && !hasPurchaseIntent
+}
+
+function buildEducationalFallback(query: string): string | null {
+  const normalized = normalizeText(query)
+  const asksAboutRamAndSsd = normalized.includes('ram') && normalized.includes('ssd')
+
+  if (asksAboutRamAndSsd) {
+    return [
+      'Claro. Te explico la diferencia entre RAM y SSD:',
+      '',
+      '1) RAM: memoria temporal y muy rapida. Se usa mientras programas y juegos estan abiertos.',
+      '2) SSD: almacenamiento permanente. Guarda sistema, apps y archivos incluso cuando apagas la PC.',
+      '3) Velocidad: la RAM es mas rapida para trabajo instantaneo; el SSD mejora carga de sistema y aplicaciones.',
+      '4) Capacidad tipica: RAM en GB (8, 16, 32), SSD en GB/TB (256, 512, 1TB+).',
+      '',
+      'Si quieres, tambien te recomiendo una combinacion segun tu uso (oficina, gaming, edicion o estudio).',
+    ].join('\n')
+  }
+
+  if (isInformationalQuestion(query)) {
+    return [
+      'Puedo ayudarte con preguntas tecnicas y comparaciones de componentes.',
+      'Tambien puedo recomendarte productos segun tu presupuesto y uso.',
+      'Si quieres, dime para que usaras el equipo y te sugiero opciones concretas.',
+    ].join(' ')
+  }
+
+  return null
+}
+
+function resolveAiMessage(query: string, response: chatRecommendI): string {
+  const hasProducts = Boolean(response.products && response.products.length > 0)
+  if (hasProducts) return response.message
+
+  if (!isStockFallbackMessage(response.message)) return response.message
+
+  return buildEducationalFallback(query) ?? response.message
+}
+
 export interface ChatMessage {
   id: string
   type: 'user' | 'ai'
@@ -61,11 +155,13 @@ export const useChatStore = defineStore('chat', () => {
       // Guardar conversation_id
       conversationId.value = response.conversation_id
 
+      const aiContent = resolveAiMessage(query.trim(), response)
+
       // Agregar respuesta de la IA
       const aiMessage: ChatMessage = {
         id: `ai-${Date.now()}`,
         type: 'ai',
-        content: response.message,
+        content: aiContent,
         timestamp: new Date(),
         products: response.products || undefined,
       }

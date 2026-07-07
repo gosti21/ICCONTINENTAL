@@ -98,7 +98,7 @@
 
       <!-- BOTTOM -->
       <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <span class="text-sm"> ANTTECH © 2026. Todos los derechos reservados </span>
+        <span class="text-sm"> ANTTEC © 2026. Todos los derechos reservados </span>
 
         <div class="flex gap-5">
           <a
