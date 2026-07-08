@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { chatRecommendI, productIAI } from '@/interfaces/Ia/ChatRecommendInterface'
 import IaService from '@/services/ia/IaService'
+import ProductSService from '@/services/shop/ProductSService'
 
 const STOCK_FALLBACK_PATTERNS = [
   'no tenemos ese producto en stock',
@@ -309,6 +310,7 @@ export const useChatStore = defineStore('chat', () => {
   const conversationId = ref<string | null>(null)
   const isLoading = ref(false)
   const iaService = new IaService()
+  const productSService = new ProductSService()
 
   // Computed
   const hasMessages = computed(() => messages.value.length > 0)
@@ -325,6 +327,30 @@ export const useChatStore = defineStore('chat', () => {
 
   function closeChat() {
     isOpen.value = false
+  }
+
+  async function getMostExpensiveProductReply(): Promise<string | null> {
+    try {
+      // Consulta directa a productos para evitar respuestas desactualizadas del indice IA.
+      const response = await productSService.getWithFilters({ sort: 'price_desc', page: 1, limit: 1 })
+      const firstProduct = response?.data?.[0]
+
+      if (!firstProduct) {
+        return null
+      }
+
+      const price = Number(firstProduct.variant?.selling_price || 0)
+      const formattedPrice = Number.isFinite(price) ? price.toFixed(2) : '0.00'
+
+      return [
+        `El producto mas caro disponible actualmente es ${firstProduct.name} ${firstProduct.model}.`,
+        `Precio: S/. ${formattedPrice}.`,
+        'Si quieres, te muestro tambien alternativas un poco mas economicas.',
+      ].join(' ')
+    } catch (error) {
+      console.error('Error obteniendo producto mas caro:', error)
+      return null
+    }
   }
 
   async function sendMessage(query: string) {
@@ -349,6 +375,19 @@ export const useChatStore = defineStore('chat', () => {
         timestamp: new Date(),
       })
       return
+    }
+
+    if (isMostExpensiveQuery(normalizedQuery)) {
+      const expensiveReply = await getMostExpensiveProductReply()
+      if (expensiveReply) {
+        messages.value.push({
+          id: `ai-expensive-${Date.now()}`,
+          type: 'ai',
+          content: expensiveReply,
+          timestamp: new Date(),
+        })
+        return
+      }
     }
 
     // Mostrar indicador de carga
