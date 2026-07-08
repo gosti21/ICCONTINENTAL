@@ -16,13 +16,29 @@ const minPrice = computed(() => {
   return Math.min(...props.product.variants.map((v) => v.price))
 })
 
-function goToProduct() {
-  // Obtener primera variante para la ruta
-  const firstVariant = props.product.variants[0]
+// Precio máximo de las variantes
+const maxPrice = computed(() => {
+  if (!props.product.variants || props.product.variants.length === 0) return 0
+  return Math.max(...props.product.variants.map((v) => v.price))
+})
 
-  if (firstVariant) {
+const hasPriceRange = computed(() => minPrice.value > 0 && maxPrice.value > minPrice.value)
+
+const preferredVariant = computed(() => {
+  if (!props.product.variants || props.product.variants.length === 0) {
+    return null
+  }
+
+  // Ir por defecto a la variante de mayor precio para evitar abrir una variante mas barata.
+  return [...props.product.variants].sort((a, b) => b.price - a.price)[0]
+})
+
+function goToProduct() {
+  const bestVariant = preferredVariant.value
+
+  if (bestVariant) {
     router.push({
-      path: `/variant/product/${props.product.id}/variant/${firstVariant.id}`,
+      path: `/variant/product/${props.product.id}/variant/${bestVariant.id}`,
     })
   }
 }
@@ -68,8 +84,11 @@ function goToProduct() {
     <div class="flex items-center justify-between pt-3 border-t border-gray-100">
       <!-- Precio -->
       <div>
-        <p class="text-xs text-gray-500">Desde</p>
-        <p class="text-lg font-bold text-blue-600">S/. {{ minPrice.toFixed(2) }}</p>
+        <p class="text-xs text-gray-500">Precio</p>
+        <p v-if="hasPriceRange" class="text-lg font-bold text-blue-600">
+          S/. {{ minPrice.toFixed(2) }} - {{ maxPrice.toFixed(2) }}
+        </p>
+        <p v-else class="text-lg font-bold text-blue-600">S/. {{ maxPrice.toFixed(2) }}</p>
       </div>
 
       <!-- Botón ver producto -->

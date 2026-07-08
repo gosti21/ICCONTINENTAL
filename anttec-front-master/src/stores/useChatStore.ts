@@ -49,6 +49,15 @@ const GREETING_KEYWORDS = ['hola', 'holi', 'buenas', 'buenos dias', 'buenas tard
 const HELP_KEYWORDS = ['ayuda', 'ayudame', 'qué puedes hacer', 'que puedes hacer']
 const THANKS_KEYWORDS = ['gracias', 'muchas gracias', 'thanks']
 const BYE_KEYWORDS = ['adios', 'hasta luego', 'nos vemos', 'bye']
+const MOST_EXPENSIVE_KEYWORDS = [
+  'mas caro',
+  'más caro',
+  'mayor precio',
+  'precio mas alto',
+  'precio más alto',
+  'el mas caro',
+  'el más caro',
+]
 
 function normalizeText(value: string): string {
   return value
@@ -142,6 +151,39 @@ function detectCategory(query: string): string | null {
   if (normalized.includes('fuente')) return 'fuente de poder'
 
   return null
+}
+
+function getProductMaxPrice(product: productIAI): number {
+  if (!product.variants || product.variants.length === 0) return 0
+  return Math.max(...product.variants.map((variant) => variant.price || 0))
+}
+
+function isMostExpensiveQuery(query: string): boolean {
+  const normalized = normalizeText(query)
+  return MOST_EXPENSIVE_KEYWORDS.some((keyword) => normalized.includes(keyword))
+}
+
+function isSingleMostExpensiveQuery(query: string): boolean {
+  const normalized = normalizeText(query)
+  return isMostExpensiveQuery(query) && (normalized.includes('el ') || normalized.includes('uno'))
+}
+
+function prioritizeProductsByQuery(query: string, products: productIAI[] | null): productIAI[] | undefined {
+  if (!products || products.length === 0) return undefined
+
+  if (!isMostExpensiveQuery(query)) {
+    return products
+  }
+
+  const sortedByPriceDesc = [...products].sort(
+    (a, b) => getProductMaxPrice(b) - getProductMaxPrice(a),
+  )
+
+  if (isSingleMostExpensiveQuery(query)) {
+    return sortedByPriceDesc.slice(0, 1)
+  }
+
+  return sortedByPriceDesc
 }
 
 function buildSalesAssistantReply(query: string): string {
@@ -323,6 +365,7 @@ export const useChatStore = defineStore('chat', () => {
       conversationId.value = response.conversation_id
 
       const aiContent = resolveAiMessage(normalizedQuery, response)
+      const prioritizedProducts = prioritizeProductsByQuery(normalizedQuery, response.products)
 
       // Agregar respuesta de la IA
       const aiMessage: ChatMessage = {
@@ -330,7 +373,7 @@ export const useChatStore = defineStore('chat', () => {
         type: 'ai',
         content: aiContent,
         timestamp: new Date(),
-        products: response.products || undefined,
+        products: prioritizedProducts,
       }
       messages.value.push(aiMessage)
     } catch (error) {
