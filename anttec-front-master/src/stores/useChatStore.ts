@@ -59,6 +59,17 @@ const MOST_EXPENSIVE_KEYWORDS = [
   'el mas caro',
   'el más caro',
 ]
+const CHEAPEST_KEYWORDS = [
+  'mas barato',
+  'más barato',
+  'menor precio',
+  'precio mas bajo',
+  'precio más bajo',
+  'el mas barato',
+  'el más barato',
+  'economico',
+  'económico',
+]
 
 function normalizeText(value: string): string {
   return value
@@ -169,22 +180,44 @@ function isSingleMostExpensiveQuery(query: string): boolean {
   return isMostExpensiveQuery(query) && (normalized.includes('el ') || normalized.includes('uno'))
 }
 
+function isCheapestQuery(query: string): boolean {
+  const normalized = normalizeText(query)
+  return CHEAPEST_KEYWORDS.some((keyword) => normalized.includes(keyword))
+}
+
+function isSingleCheapestQuery(query: string): boolean {
+  const normalized = normalizeText(query)
+  return isCheapestQuery(query) && (normalized.includes('el ') || normalized.includes('uno'))
+}
+
 function prioritizeProductsByQuery(query: string, products: productIAI[] | null): productIAI[] | undefined {
   if (!products || products.length === 0) return undefined
 
-  if (!isMostExpensiveQuery(query)) {
-    return products
+  if (isMostExpensiveQuery(query)) {
+    const sortedByPriceDesc = [...products].sort(
+      (a, b) => getProductMaxPrice(b) - getProductMaxPrice(a),
+    )
+
+    if (isSingleMostExpensiveQuery(query)) {
+      return sortedByPriceDesc.slice(0, 1)
+    }
+
+    return sortedByPriceDesc
   }
 
-  const sortedByPriceDesc = [...products].sort(
-    (a, b) => getProductMaxPrice(b) - getProductMaxPrice(a),
-  )
+  if (isCheapestQuery(query)) {
+    const sortedByPriceAsc = [...products].sort(
+      (a, b) => getProductMaxPrice(a) - getProductMaxPrice(b),
+    )
 
-  if (isSingleMostExpensiveQuery(query)) {
-    return sortedByPriceDesc.slice(0, 1)
+    if (isSingleCheapestQuery(query)) {
+      return sortedByPriceAsc.slice(0, 1)
+    }
+
+    return sortedByPriceAsc
   }
 
-  return sortedByPriceDesc
+  return products
 }
 
 function buildSalesAssistantReply(query: string): string {
@@ -331,24 +364,55 @@ export const useChatStore = defineStore('chat', () => {
 
   async function getMostExpensiveProductReply(): Promise<string | null> {
     try {
-      // Consulta directa a productos para evitar respuestas desactualizadas del indice IA.
-      const response = await productSService.getWithFilters({ sort: 'price_desc', page: 1, limit: 1 })
-      const firstProduct = response?.data?.[0]
+      // El backend actual no garantiza sort por precio, asi que calculamos el maximo aqui.
+      const response = await productSService.getWithFilters()
+      const products = response?.data || []
 
-      if (!firstProduct) {
+      if (products.length === 0) {
         return null
       }
 
-      const price = Number(firstProduct.variant?.selling_price || 0)
+      const mostExpensiveProduct = [...products].sort(
+        (a, b) => Number(b.variant?.selling_price || 0) - Number(a.variant?.selling_price || 0),
+      )[0]
+
+      const price = Number(mostExpensiveProduct.variant?.selling_price || 0)
       const formattedPrice = Number.isFinite(price) ? price.toFixed(2) : '0.00'
 
       return [
-        `El producto mas caro disponible actualmente es ${firstProduct.name} ${firstProduct.model}.`,
+        `El producto mas caro disponible actualmente es ${mostExpensiveProduct.name} ${mostExpensiveProduct.model}.`,
         `Precio: S/. ${formattedPrice}.`,
         'Si quieres, te muestro tambien alternativas un poco mas economicas.',
       ].join(' ')
     } catch (error) {
       console.error('Error obteniendo producto mas caro:', error)
+      return null
+    }
+  }
+
+  async function getCheapestProductReply(): Promise<string | null> {
+    try {
+      const response = await productSService.getWithFilters()
+      const products = response?.data || []
+
+      if (products.length === 0) {
+        return null
+      }
+
+      const cheapestProduct = [...products].sort(
+        (a, b) => Number(a.variant?.selling_price || 0) - Number(b.variant?.selling_price || 0),
+      )[0]
+
+      const price = Number(cheapestProduct.variant?.selling_price || 0)
+      const formattedPrice = Number.isFinite(price) ? price.toFixed(2) : '0.00'
+
+      return [
+        `El producto mas barato disponible actualmente es ${cheapestProduct.name} ${cheapestProduct.model}.`,
+        `Precio: S/. ${formattedPrice}.`,
+        'Si quieres, tambien te muestro opciones con mejor rendimiento.',
+      ].join(' ')
+    } catch (error) {
+      console.error('Error obteniendo producto mas barato:', error)
       return null
     }
   }
@@ -384,6 +448,19 @@ export const useChatStore = defineStore('chat', () => {
           id: `ai-expensive-${Date.now()}`,
           type: 'ai',
           content: expensiveReply,
+          timestamp: new Date(),
+        })
+        return
+      }
+    }
+
+    if (isCheapestQuery(normalizedQuery)) {
+      const cheapestReply = await getCheapestProductReply()
+      if (cheapestReply) {
+        messages.value.push({
+          id: `ai-cheapest-${Date.now()}`,
+          type: 'ai',
+          content: cheapestReply,
           timestamp: new Date(),
         })
         return
