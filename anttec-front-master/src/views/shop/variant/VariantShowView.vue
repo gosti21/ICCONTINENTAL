@@ -45,8 +45,8 @@ const loadProduct = async () => {
       },
     } as variantSI
 
-    // Mantener una sola feature activa para la selección manual.
-    selectedFeatureId.value = data.selected_variant.features[0]?.id ?? null
+    // Iniciar sin selección para evitar múltiples opciones activas por defecto.
+    selectedFeatureId.value = null
 
     // Reset cantidad al cargar nueva variante
     quantity.value = 1
@@ -120,9 +120,11 @@ const groupedFeatures = computed(() => {
   return groups
 })
 
+const flatFeatures = computed(() => Object.values(groupedFeatures.value).flat())
+
 // Obtener features seleccionadas actualmente
 const selectedFeatures = computed(() => {
-  const features = product.value?.selected_variant.features || []
+  const features = flatFeatures.value
   if (selectedFeatureId.value === null) return []
   return features.filter((feature) => feature.id === selectedFeatureId.value)
 })
@@ -135,6 +137,12 @@ const isFeatureSelected = (featureId: number) => {
 // Verificar disponibilidad de feature
 const isFeatureAvailable = (featureId: number, _optionName: string) => {
   if (!product.value) return false
+
+  // Regla solicitada: solo una opción activa a la vez.
+  if (selectedFeatureId.value !== null && selectedFeatureId.value !== featureId) {
+    return false
+  }
+
   return product.value.variants.some((variant) => variant.features.some((vf) => vf.id === featureId))
 }
 
@@ -341,7 +349,9 @@ onBeforeUnmount(() => {
             @select-feature="selectFeature"
           />
 
-          <p class="text-xs text-gray-500 dark:text-gray-400">Puedes seleccionar una sola opción a la vez.</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">
+            Puedes seleccionar una sola opción a la vez. Haz clic nuevamente para deseleccionarla.
+          </p>
 
           <!-- Cantidad y Acciones -->
           <div class="space-y-4 pt-4">
