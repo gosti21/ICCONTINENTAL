@@ -22,6 +22,7 @@ const product = ref<variantSI | null>(null)
 const isLoading = ref(true)
 const quantity = ref(1)
 const swiperKey = ref(0)
+const selectedFeatureId = ref<number | null>(null)
 
 // Composable del carrito
 const { addToCart: addToCartComposable, isInCart, getItemQuantity } = useCart()
@@ -43,6 +44,9 @@ const loadProduct = async () => {
         images: data.selected_variant.images.map((img) => ({ ...img, imgLoaded: false })),
       },
     } as variantSI
+
+    // Mantener una sola feature activa para la selección manual.
+    selectedFeatureId.value = data.selected_variant.features[0]?.id ?? null
 
     // Reset cantidad al cargar nueva variante
     quantity.value = 1
@@ -118,67 +122,37 @@ const groupedFeatures = computed(() => {
 
 // Obtener features seleccionadas actualmente
 const selectedFeatures = computed(() => {
-  return product.value?.selected_variant.features || []
+  const features = product.value?.selected_variant.features || []
+  if (selectedFeatureId.value === null) return []
+  return features.filter((feature) => feature.id === selectedFeatureId.value)
 })
 
 // Verificar si una feature está seleccionada
 const isFeatureSelected = (featureId: number) => {
-  return selectedFeatures.value.some((f) => f.id === featureId)
+  return selectedFeatureId.value === featureId
 }
 
 // Verificar disponibilidad de feature
-const isFeatureAvailable = (featureId: number, optionName: string) => {
+const isFeatureAvailable = (featureId: number, _optionName: string) => {
   if (!product.value) return false
-
-  const currentFeatures = selectedFeatures.value.filter((f) => f.option !== optionName)
-  const targetFeature = Object.values(groupedFeatures.value)
-    .flat()
-    .find((f) => f.id === featureId)
-
-  if (!targetFeature) return false
-
-  if (currentFeatures.length === 0) {
-    return product.value.variants.some((variant) =>
-      variant.features.some((vf) => vf.id === featureId),
-    )
-  }
-
-  return product.value.variants.some((variant) => {
-    const hasTargetFeature = variant.features.some((vf) => vf.id === featureId)
-    if (!hasTargetFeature) return false
-
-    const otherOptions = new Set(currentFeatures.map((f) => f.option))
-    if (otherOptions.size === 0) return true
-
-    return Array.from(otherOptions).every((option) => {
-      return variant.features.some((vf) => vf.option === option)
-    })
-  })
+  return product.value.variants.some((variant) => variant.features.some((vf) => vf.id === featureId))
 }
 
 // Seleccionar feature y navegar a la variante correspondiente
-const selectFeature = (featureId: number, optionName: string) => {
+const selectFeature = (featureId: number, _optionName: string) => {
   if (!product.value) return
 
-  const currentFeatures = selectedFeatures.value.filter((f) => f.option !== optionName)
-  const newFeature = Object.values(groupedFeatures.value)
-    .flat()
-    .find((f) => f.id === featureId)
-
-  if (!newFeature) return
-
-  const targetFeatures = [...currentFeatures, newFeature]
-
-  let targetVariant = product.value.variants.find((variant) => {
-    if (variant.features.length !== targetFeatures.length) return false
-    return targetFeatures.every((tf) => variant.features.some((vf) => vf.id === tf.id))
-  })
-
-  if (!targetVariant) {
-    targetVariant = product.value.variants.find((variant) =>
-      variant.features.some((vf) => vf.id === featureId),
-    )
+  // Toggle para permitir deselección.
+  if (selectedFeatureId.value === featureId) {
+    selectedFeatureId.value = null
+    return
   }
+
+  selectedFeatureId.value = featureId
+
+  const targetVariant = product.value.variants.find((variant) =>
+    variant.features.some((vf) => vf.id === featureId),
+  )
 
   if (targetVariant) {
     router.push({
@@ -366,6 +340,8 @@ onBeforeUnmount(() => {
             :is-feature-available="isFeatureAvailable"
             @select-feature="selectFeature"
           />
+
+          <p class="text-xs text-gray-500 dark:text-gray-400">Puedes seleccionar una sola opción a la vez.</p>
 
           <!-- Cantidad y Acciones -->
           <div class="space-y-4 pt-4">

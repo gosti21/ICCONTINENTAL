@@ -21,16 +21,11 @@ class ProductMRepository implements ProductMInterface
     public function getAll(int $pagination): LengthAwarePaginator
     {
         $query = Product::query()
-            ->whereHas('variants.branches', function ($q) {
-                $q->where('branch_id', $this->branchId);
-            })
+            ->whereHas('variants')
             ->with([
                 'brand',
                 'variants' => function ($q) {
-                    $q->whereHas('branches', function ($b) {
-                        $b->where('branch_id', $this->branchId);
-                    })
-                        ->with([
+                    $q->with([
                             'images' => function ($img) {
                                 $img->orderBy('id')->limit(1);
                             },

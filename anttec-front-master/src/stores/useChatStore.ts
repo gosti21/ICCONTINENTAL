@@ -299,7 +299,7 @@ function buildInteractiveLocalReply(query: string): string | null {
 
   if (includesAnyKeyword(normalized, GREETING_KEYWORDS)) {
     return [
-      'Hola, soy tu asistente de ANTTEC. Listo para ayudarte.',
+      'Hola, soy tu asistente de FERREBOM. Listo para ayudarte.',
       'Puedes preguntarme, por ejemplo:',
       '- "Recomiendame una RAM para gaming"',
       '- "Que diferencia hay entre RAM y SSD"',

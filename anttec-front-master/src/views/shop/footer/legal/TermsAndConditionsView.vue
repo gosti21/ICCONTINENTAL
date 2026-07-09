@@ -24,7 +24,7 @@ import logo from '@/assets/img/logo.png'
           <h3 class="mt-4 text-xl dark:text-gray-200 font-medium mb-2">1. Introducción</h3>
           <div class="mb-4 dark:text-gray-300">
             <p class="mb-6">
-              Bienvenido a ANTTEC. Al acceder y utilizar este sitio web, aceptas los siguientes
+              Bienvenido a FERREBOM. Al acceder y utilizar este sitio web, aceptas los siguientes
               Términos y Condiciones. Si no estás de acuerdo con estos términos, por favor no
               utilices nuestro sitio.
             </p>
@@ -36,7 +36,7 @@ import logo from '@/assets/img/logo.png'
           </h3>
           <div class="mb-4 dark:text-gray-300">
             <p class="mb-6">
-              ANTTEC se especializa en la venta de periféricos, con un enfoque principal en
+              FERREBOM se especializa en la venta de periféricos, con un enfoque principal en
               productos dirigidos tanto a usuarios domésticos, gamers, estudiantes, profesionales y
               empresas.
             </p>
@@ -83,7 +83,7 @@ import logo from '@/assets/img/logo.png'
             <p class="mb-6">
               El cliente es responsable de proporcionar información verídica y precisa al momento de
               realizar su compra. Esto incluye datos de contacto, dirección de envío y métodos de
-              pago. En caso de error en la información proporcionada, ANTTEC no se hace responsable
+              pago. En caso de error en la información proporcionada, FERREBOM no se hace responsable
               de retrasos o problemas con el envío.
             </p>
           </div>
@@ -92,9 +92,9 @@ import logo from '@/assets/img/logo.png'
           <h3 class="mt-4 text-xl dark:text-gray-200 font-medium mb-2">7. Propiedad Intelectual</h3>
           <div class="mb-4 dark:text-gray-300">
             <p class="mb-6">
-              Todo el contenido del sitio web de ANTTEC, incluyendo imágenes, descripciones de
+              Todo el contenido del sitio web de FERREBOM, incluyendo imágenes, descripciones de
               productos y logotipos, están protegidos por derechos de autor y son propiedad
-              exclusiva de ANTTEC. Queda prohibida su reproducción, distribución o uso sin el
+              exclusiva de FERREBOM. Queda prohibida su reproducción, distribución o uso sin el
               consentimiento expreso de la empresa.
             </p>
           </div>

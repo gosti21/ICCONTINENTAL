@@ -22,7 +22,7 @@ import logo from '@/assets/img/logo.png'
           <h3 class="mt-4 text-xl dark:text-gray-200 font-medium mb-2">¿Quiénes somos?</h3>
           <div class="mb-4 dark:text-gray-300">
             <p class="mb-2">
-              ANTTEC es una empresa especializada en la venta de periféricos y productos
+              FERREBOM es una empresa especializada en la venta de periféricos y productos
               tecnológicos, orientada a satisfacer las necesidades de usuarios domésticos, gamers,
               estudiantes, profesionales y empresas.
             </p>
@@ -107,7 +107,7 @@ import logo from '@/assets/img/logo.png'
         <section>
           <h3 class="text-xl dark:text-gray-200 font-medium mb-2">Nuestro compromiso</h3>
           <p class="mb-6 dark:text-gray-300">
-            En ANTTEC nos comprometemos a acompañarte antes, durante y después de tu compra,
+            En FERREBOM nos comprometemos a acompañarte antes, durante y después de tu compra,
             asegurando transparencia, soporte y satisfacción en cada pedido.
           </p>
         </section>

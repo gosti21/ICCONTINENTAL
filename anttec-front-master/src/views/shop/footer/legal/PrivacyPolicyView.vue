@@ -24,7 +24,7 @@ import logo from '@/assets/img/logo.png'
           <h3 class="mt-4 text-xl dark:text-gray-200 font-medium mb-2">1. Introducción</h3>
           <div class="mb-4 dark:text-gray-300">
             <p class="mb-6">
-              En ANTTEC, tu privacidad es muy importante para nosotros. Esta Política de Privacidad
+              En FERREBOM, tu privacidad es muy importante para nosotros. Esta Política de Privacidad
               describe cómo recopilamos, usamos, protegemos y compartimos la información personal
               que nos proporcionas al utilizar nuestro sitio web y servicios.
             </p>

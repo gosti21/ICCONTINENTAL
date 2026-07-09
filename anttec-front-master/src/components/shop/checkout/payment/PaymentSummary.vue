@@ -130,7 +130,7 @@ const preInitializeNiubiz = () => {
       amount: 1,
       expirationminutes: '20',
       timeouturl: window.location.origin + '/checkout/payment/timeout',
-      merchantname: 'ANTTECH',
+      merchantname: 'FERREBOM',
       merchantlogo: merchantLogo,
       formbuttoncolor: '#753089',
       method: 'POST',
