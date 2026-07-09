@@ -29,8 +29,13 @@ const preferredVariant = computed(() => {
     return null
   }
 
-  // Ir por defecto a la variante de mayor precio para evitar abrir una variante mas barata.
-  return [...props.product.variants].sort((a, b) => b.price - a.price)[0]
+  const inStock = props.product.variants.filter((variant) => Number(variant.stock || 0) > 0)
+
+  if (inStock.length > 0) {
+    return [...inStock].sort((a, b) => a.price - b.price)[0]
+  }
+
+  return [...props.product.variants].sort((a, b) => a.price - b.price)[0]
 })
 
 function goToProduct() {
@@ -96,7 +101,7 @@ function goToProduct() {
         @click.stop="goToProduct"
         class="px-4 py-2 bg-linear-to-r from-blue-500 to-purple-500 text-white text-sm font-medium rounded-lg hover:from-blue-600 hover:to-purple-600 transition-all duration-200 transform hover:scale-105"
       >
-        Ver producto
+        Comprar ahora
         <i class="fas fa-arrow-right ml-1"></i>
       </button>
     </div>

@@ -3,6 +3,7 @@
 namespace App\Services\Api\v1\Ia;
 
 use App\Contracts\Api\v1\Ia\ProductIaInterface;
+use App\Http\Resources\Api\v1\Ia\ProductIaResource;
 use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -28,13 +29,22 @@ class RecommendationIAService
     /**
      * Envía una consulta al sistema de IA para obtener recomendaciones.
      *
-     * @param string $query Consulta del usuario ("necesito un mouse gaming")
+    * @param string $query Consulta del usuario ("necesito pernos M12 para maquinaria pesada")
      * @param string|null $conversationId ID de conversación (para seguimiento)
      * @return array Respuesta de la IA
      */
     public function recommend(string $query, ?string $conversationId = null): array
     {
         $queryLower = Str::lower($query);
+
+        if ($this->isMostExpensiveIntent($queryLower)) {
+            return $this->buildPriceExtremeResponse($query, $conversationId, true);
+        }
+
+        if ($this->isCheapestIntent($queryLower)) {
+            return $this->buildPriceExtremeResponse($query, $conversationId, false);
+        }
+
         $queryTokens = $this->tokenizeQuery($query);
         $requestedLimit = $this->resolveRequestedLimit($queryLower);
 
@@ -86,7 +96,7 @@ class RecommendationIAService
                         'messages' => [
                             [
                                 'role' => 'system',
-                                'content' => 'Eres un asistente de ventas especializado en recomendacion de productos informaticos. Responde en espanol y SOLO puedes recomendar productos listados en el catalogo entregado. No inventes productos ni caracteristicas.',
+                                'content' => 'Eres un asesor comercial de FERREBOM especializado en pernos, tuercas, arandelas y maquinaria pesada. Responde en espanol y SOLO puedes recomendar productos listados en el catalogo entregado. No inventes productos ni especificaciones.',
                             ],
                             [
                                 'role' => 'user',
@@ -347,16 +357,24 @@ class RecommendationIAService
             ->flatMap(function ($token) {
                 $expanded = [$token];
 
-                if (in_array($token, ['memoria', 'ram'], true)) {
-                    $expanded = [...$expanded, 'ram', 'memoria', 'ddr4', 'ddr5', 'mhz', 'gb'];
+                if (in_array($token, ['perno', 'pernos', 'tuerca', 'tuercas', 'arandela', 'arandelas'], true)) {
+                    $expanded = [...$expanded, 'rosca', 'diametro', 'metrico', 'mm', 'grado', '8.8', '10.9', '12.9'];
                 }
 
-                if (in_array($token, ['potente', 'rendimiento', 'rapida', 'rapido', 'mejor'], true)) {
-                    $expanded = [...$expanded, 'rendimiento', 'rapido', 'frecuencia', 'mhz', 'latencia'];
+                if (in_array($token, ['maquinaria', 'pesada', 'industrial'], true)) {
+                    $expanded = [...$expanded, 'alta resistencia', 'grado', 'structural', 'estructural', 'ansi', 'din', 'iso'];
                 }
 
-                if (in_array($token, ['gaming', 'gamer'], true)) {
-                    $expanded = [...$expanded, 'gaming', 'gamer', 'rgb'];
+                if (in_array($token, ['inoxidable', 'galvanizado', 'acero'], true)) {
+                    $expanded = [...$expanded, 'material', 'corrosion', 'resistencia'];
+                }
+
+                if (in_array($token, ['din', 'iso', 'sae', 'ansi', 'astm'], true)) {
+                    $expanded = [...$expanded, 'norma', 'estandar', 'estándar'];
+                }
+
+                if (in_array($token, ['88', '109', '129', '88.', '10.9', '12.9'], true)) {
+                    $expanded = [...$expanded, 'grado', 'resistencia'];
                 }
 
                 return $expanded;
@@ -369,8 +387,8 @@ class RecommendationIAService
     protected function isUpgradeIntent(string $query): bool
     {
         return $this->hasAnyKeyword($query, [
-            'mas potente', 'más potente', 'mas rapido', 'más rápido', 'mejor',
-            'upgrade', 'actualizar', 'rendir', 'rendimiento', 'superior', 'mas fuerte', 'más fuerte'
+            'mas resistente', 'más resistente', 'mayor resistencia', 'grado superior', 'mas fuerte', 'más fuerte',
+            'alto torque', 'trabajo pesado', 'maquinaria pesada', 'industrial'
         ]);
     }
 
@@ -388,17 +406,14 @@ class RecommendationIAService
     protected function buildQueryContext(string $queryLower, array $tokens): array
     {
         $keywordGroups = [
-            'ram' => ['ram', 'memoria', 'ddr4', 'ddr5', 'sodimm', 'dimm'],
-            'almacenamiento' => ['ssd', 'nvme', 'm2', 'sata', 'hdd', 'disco'],
-            'procesador' => ['procesador', 'cpu', 'ryzen', 'intel', 'core', 'i3', 'i5', 'i7', 'i9'],
-            'gpu' => ['gpu', 'grafica', 'video', 'rtx', 'gtx', 'radeon'],
-            'placa_madre' => ['placa', 'motherboard', 'mainboard', 'am4', 'am5', 'lga'],
-            'fuente' => ['fuente', 'psu', 'watt', '80plus', 'bronze', 'gold'],
-            'monitor' => ['monitor', 'pantalla', 'ips', 'hz', '144hz', '240hz'],
-            'mouse' => ['mouse', 'raton', 'dpi'],
-            'teclado' => ['teclado', 'keyboard', 'mecanico', 'switch'],
-            'audio' => ['audifono', 'headset', 'auricular', 'microfono'],
-            'laptop' => ['laptop', 'notebook', 'portatil'],
+            'pernos' => ['perno', 'pernos', 'bulon', 'esparrago', 'espárrago', 'anclaje'],
+            'tuercas' => ['tuerca', 'tuercas', 'contratuerca', 'autofrenante'],
+            'arandelas' => ['arandela', 'arandelas', 'plana', 'presion', 'presión'],
+            'rosca_y_medida' => ['rosca', 'metrico', 'm6', 'm8', 'm10', 'm12', 'm16', 'paso', 'diametro', 'diametro'],
+            'material' => ['acero', 'inoxidable', 'galvanizado', 'zincado'],
+            'resistencia' => ['grado', '88', '109', '129', 'alta resistencia', 'estructural'],
+            'normativa' => ['din', 'iso', 'sae', 'ansi', 'astm', 'norma', 'estandar', 'estándar'],
+            'maquinaria_pesada' => ['maquinaria', 'pesada', 'excavadora', 'retroexcavadora', 'tractor', 'industrial'],
         ];
 
         $flatKeywords = [];
@@ -521,7 +536,7 @@ class RecommendationIAService
         $name = $first['name'] ?? 'este articulo';
 
         return sprintf(
-            'Hay varios tipos para "%s" y te recomendaria revisar opciones de %s. Por el momento no contamos con stock inmediato, pero un articulo con especificaciones similares es %s y podria servirte como referencia tecnica.',
+            'Hay varios tipos para "%s" y te recomendaria revisar opciones de %s. Por el momento no contamos con stock inmediato, pero un articulo con especificaciones similares es %s y podria servirte como referencia tecnica para pernos/tuercas.',
             $query,
             $brand,
             $name
@@ -530,41 +545,25 @@ class RecommendationIAService
 
     protected function buildCompatibilityQuestion(string $queryLower, array $tokens): ?string
     {
-        $hasRamIntent = $this->hasAnyKeyword($queryLower, ['ram', 'memoria'])
-            || count(array_intersect($tokens, ['ram', 'memoria', 'ddr4', 'ddr5', 'sodimm', 'dimm'])) > 0;
+        $hasFastenerIntent = $this->hasAnyKeyword($queryLower, [
+            'perno', 'pernos', 'tuerca', 'tuercas', 'arandela', 'arandelas', 'bulon', 'espárrago', 'esparrago'
+        ]) || count(array_intersect($tokens, ['perno', 'pernos', 'tuerca', 'tuercas', 'arandela', 'arandelas'])) > 0;
 
-        if ($hasRamIntent) {
-            $hasRamCompatibilityData = $this->hasAnyKeyword($queryLower, [
-                'ddr3', 'ddr4', 'ddr5', 'sodimm', 'dimm', 'laptop', 'notebook', 'portatil',
-                'desktop', 'escritorio', 'pc de escritorio'
+        if ($hasFastenerIntent) {
+            $hasTechnicalData = $this->hasAnyKeyword($queryLower, [
+                'm6', 'm8', 'm10', 'm12', 'm16', 'mm', 'pulg', 'rosca', 'paso', 'grado', 'material', 'inoxidable', 'galvanizado',
+                'din', 'iso', 'sae', 'ansi', 'astm', '8.8', '10.9', '12.9'
             ]);
 
-            if (!$hasRamCompatibilityData) {
-                return 'Antes de recomendarte la mejor RAM, dime si es para laptop o PC de escritorio y que tipo soporta tu placa (DDR4 o DDR5).';
+            if (!$hasTechnicalData) {
+                return 'Para recomendarte el perno o tuerca correcto, confirmame medida (ej. M10x50), tipo de rosca, grado de resistencia, material y norma (DIN/ISO/SAE si aplica).';
             }
         }
 
-        $hasStorageIntent = $this->hasAnyKeyword($queryLower, ['ssd', 'hdd', 'disco', 'almacenamiento', 'nvme']);
-        if ($hasStorageIntent) {
-            $hasStorageCompatibilityData = $this->hasAnyKeyword($queryLower, ['m2', 'm.2', 'nvme', 'sata', 'pcie', '2.5']);
-            if (!$hasStorageCompatibilityData) {
-                return 'Para recomendarte mejor almacenamiento, confirmame si buscas M.2 NVMe o SSD/HDD SATA de 2.5 pulgadas.';
-            }
-        }
-
-        $hasCpuIntent = $this->hasAnyKeyword($queryLower, ['procesador', 'cpu', 'intel', 'ryzen']);
-        if ($hasCpuIntent) {
-            $hasCpuCompatibilityData = $this->hasAnyKeyword($queryLower, ['am4', 'am5', 'lga1200', 'lga1700', 'socket']);
-            if (!$hasCpuCompatibilityData) {
-                return 'Para evitar incompatibilidades, indicame el socket de tu placa madre (por ejemplo AM4, AM5 o LGA1700).';
-            }
-        }
-
-        $hasMotherboardIntent = $this->hasAnyKeyword($queryLower, ['placa', 'placa madre', 'motherboard', 'mainboard']);
-        if ($hasMotherboardIntent) {
-            $hasMotherboardData = $this->hasAnyKeyword($queryLower, ['am4', 'am5', 'lga', 'ddr4', 'ddr5', 'chipset']);
-            if (!$hasMotherboardData) {
-                return 'Para sugerirte una placa madre correcta, cuentame que procesador usaras y si tu RAM es DDR4 o DDR5.';
+        if ($this->hasAnyKeyword($queryLower, ['maquinaria', 'pesada', 'excavadora', 'retroexcavadora', 'tractor'])) {
+            $hasMachineData = $this->hasAnyKeyword($queryLower, ['modelo', 'marca', 'aplicacion', 'aplicación', 'torque', 'grado', 'din', 'iso', 'sae']);
+            if (!$hasMachineData) {
+                return 'Para maquinaria pesada, dime marca/modelo del equipo, aplicacion del perno (chasis, balde, brazo, etc.), grado y norma tecnica requerida.';
             }
         }
 
@@ -598,7 +597,122 @@ class RecommendationIAService
 
         return "Consulta del cliente: {$query}\n" .
             "Productos recomendados desde base de datos:\n{$catalogSummary}\n" .
-                'Responde con recomendacion breve, clara y tecnica orientada a compra. Si el cliente pide algo mas potente, explica mejora de rendimiento y compatibilidad de forma simple. Usa unicamente productos del listado. No afirmes que algo es "lo mas nuevo del mercado" si ese dato no existe explicitamente en el catalogo.';
+                'Responde con recomendacion breve, clara y tecnica orientada al rubro de pernos, tuercas, arandelas y maquinaria pesada. Prioriza compatibilidad (medida, rosca, grado, material, aplicacion). Usa unicamente productos del listado y no inventes datos.';
+    }
+
+    protected function isMostExpensiveIntent(string $queryLower): bool
+    {
+        return $this->hasAnyKeyword($queryLower, [
+            'mas caro', 'más caro', 'mayor precio', 'precio mas alto', 'precio más alto', 'el mas caro', 'el más caro'
+        ]);
+    }
+
+    protected function isCheapestIntent(string $queryLower): bool
+    {
+        return $this->hasAnyKeyword($queryLower, [
+            'mas barato', 'más barato', 'menor precio', 'precio mas bajo', 'precio más bajo', 'el mas barato', 'el más barato',
+            'economico', 'económico'
+        ]);
+    }
+
+    protected function buildPriceExtremeResponse(string $query, ?string $conversationId, bool $highest): array
+    {
+        $products = $this->buildCatalogProductsForChat(true);
+
+        if (empty($products)) {
+            return [
+                'type' => 'local_no_match',
+                'message' => $this->buildLocalMessage([], $query),
+                'products' => [],
+                'conversation_id' => $conversationId ?: Str::uuid()->toString(),
+                'question_count' => 1,
+            ];
+        }
+
+        $sorted = collect($products)->sortBy(function ($product) use ($highest) {
+            $prices = collect($product['variants'] ?? [])->pluck('price')->filter(fn ($price) => is_numeric($price));
+            if ($prices->isEmpty()) {
+                return $highest ? PHP_INT_MIN : PHP_INT_MAX;
+            }
+
+            return $highest ? -1 * $prices->max() : $prices->min();
+        })->values();
+
+        $selected = $sorted->first();
+        $selectedPrices = collect($selected['variants'] ?? [])->pluck('price')->filter(fn ($price) => is_numeric($price));
+        $selectedPrice = $highest ? $selectedPrices->max() : $selectedPrices->min();
+        $priceText = is_numeric($selectedPrice) ? number_format((float) $selectedPrice, 2) : '0.00';
+
+        $intro = $highest
+            ? 'El producto de mayor precio disponible actualmente es'
+            : 'El producto de menor precio disponible actualmente es';
+
+        return [
+            'type' => $highest ? 'local_max_price' : 'local_min_price',
+            'message' => "{$intro} {$selected['name']} {$selected['model']}, con precio de S/ {$priceText}. Te dejo el atajo para abrir el producto y comprar.",
+            'products' => [$selected],
+            'conversation_id' => $conversationId ?: Str::uuid()->toString(),
+            'question_count' => 1,
+        ];
+    }
+
+    protected function buildCatalogProductsForChat(bool $onlyInStock = true): array
+    {
+        $products = $this->repository->getAllForAI();
+
+        $mapped = $products->map(function ($product) {
+            $name = (string) $product->name;
+            $model = (string) $product->model;
+            $brand = (string) ($product->brand?->name ?? 'Sin marca');
+            $category = (string) ($product->subcategory?->category?->name ?? 'Sin categoria');
+            $subcategory = (string) ($product->subcategory?->name ?? 'Sin subcategoria');
+            $description = (string) ($product->description ?? '');
+
+            $variants = $product->variants->map(function ($variant) {
+                return [
+                    'id' => (int) $variant->id,
+                    'sku' => (string) $variant->sku,
+                    'price' => (float) $variant->selling_price,
+                    'stock' => (int) $variant->branches->sum('pivot.stock'),
+                    'features' => $variant->optionProductValues->map(function ($feature) {
+                        return [
+                            'option' => (string) ($feature->optionValue->option->name ?? ''),
+                            'value' => (string) ($feature->optionValue->description ?? ''),
+                            'type' => (string) ($feature->optionValue->option->type ?? ''),
+                        ];
+                    })->values()->toArray(),
+                ];
+            })->values()->toArray();
+
+            $specifications = $product->specifications->map(function ($spec) {
+                return [
+                    'name' => (string) $spec->name,
+                    'value' => (string) ($spec->pivot->value ?? ''),
+                ];
+            })->values()->toArray();
+
+            return [
+                'id' => (int) $product->id,
+                'name' => $name,
+                'model' => $model,
+                'description' => $description,
+                'brand' => $brand,
+                'category' => $category,
+                'subcategory' => $subcategory,
+                'specifications' => $specifications,
+                'variants' => $variants,
+                'similarity_score' => 0,
+                'match_score' => 100,
+                'relevance_signals' => 1,
+                'match_reason' => 'Resultado consultado directamente desde el catalogo por precio.',
+            ];
+        });
+
+        if ($onlyInStock) {
+            $mapped = $mapped->filter(fn ($item) => collect($item['variants'] ?? [])->sum('stock') > 0);
+        }
+
+        return $mapped->values()->all();
     }
 
     protected function resolveRequestedLimit(string $queryLower): int

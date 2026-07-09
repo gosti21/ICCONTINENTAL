@@ -2,7 +2,6 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { chatRecommendI, productIAI } from '@/interfaces/Ia/ChatRecommendInterface'
 import IaService from '@/services/ia/IaService'
-import ProductSService from '@/services/shop/ProductSService'
 
 const STOCK_FALLBACK_PATTERNS = [
   'no tenemos ese producto en stock',
@@ -116,26 +115,26 @@ function isInformationalQuestion(query: string): boolean {
 
 function buildEducationalFallback(query: string): string | null {
   const normalized = normalizeText(query)
-  const asksAboutRamAndSsd = normalized.includes('ram') && normalized.includes('ssd')
+  const asksAboutPernoAndTuerca = normalized.includes('perno') && normalized.includes('tuerca')
 
-  if (asksAboutRamAndSsd) {
+  if (asksAboutPernoAndTuerca) {
     return [
-      'Claro. Te explico la diferencia entre RAM y SSD:',
+      'Claro. Te explico la diferencia entre perno y tuerca:',
       '',
-      '1) RAM: memoria temporal y muy rapida. Se usa mientras programas y juegos estan abiertos.',
-      '2) SSD: almacenamiento permanente. Guarda sistema, apps y archivos incluso cuando apagas la PC.',
-      '3) Velocidad: la RAM es mas rapida para trabajo instantaneo; el SSD mejora carga de sistema y aplicaciones.',
-      '4) Capacidad tipica: RAM en GB (8, 16, 32), SSD en GB/TB (256, 512, 1TB+).',
+      '1) Perno: elemento macho que atraviesa o fija piezas.',
+      '2) Tuerca: elemento hembra que enrosca sobre el perno para asegurar el ajuste.',
+      '3) La compatibilidad depende de diametro, paso de rosca y grado de resistencia.',
+      '4) En maquinaria pesada tambien importa el material (acero, inoxidable, galvanizado) y el torque de trabajo.',
       '',
-      'Si quieres, tambien te recomiendo una combinacion segun tu uso (oficina, gaming, edicion o estudio).',
+      'Si quieres, te ayudo a elegir la combinacion correcta segun medida y aplicacion.',
     ].join('\n')
   }
 
   if (isInformationalQuestion(query)) {
     return [
-      'Puedo ayudarte con preguntas tecnicas y comparaciones de componentes.',
-      'Tambien puedo recomendarte productos segun tu presupuesto y uso.',
-      'Si quieres, dime para que usaras el equipo y te sugiero opciones concretas.',
+      'Puedo ayudarte con preguntas tecnicas y comparaciones de pernos, tuercas y arandelas.',
+      'Tambien puedo recomendarte productos segun presupuesto y uso en maquinaria pesada.',
+      'Si quieres, dime medida, rosca y aplicacion para sugerirte opciones concretas.',
     ].join(' ')
   }
 
@@ -152,15 +151,13 @@ function extractBudget(query: string): string | null {
 function detectCategory(query: string): string | null {
   const normalized = normalizeText(query)
 
-  if (normalized.includes('mouse')) return 'mouse'
-  if (normalized.includes('teclado')) return 'teclado'
-  if (normalized.includes('audifono') || normalized.includes('headset')) return 'audifonos'
-  if (normalized.includes('monitor')) return 'monitor'
-  if (normalized.includes('ram')) return 'ram'
-  if (normalized.includes('ssd')) return 'ssd'
-  if (normalized.includes('procesador')) return 'procesador'
-  if (normalized.includes('placa') || normalized.includes('motherboard')) return 'placa madre'
-  if (normalized.includes('fuente')) return 'fuente de poder'
+  if (normalized.includes('perno') || normalized.includes('pernos')) return 'pernos'
+  if (normalized.includes('tuerca') || normalized.includes('tuercas')) return 'tuercas'
+  if (normalized.includes('arandela') || normalized.includes('arandelas')) return 'arandelas'
+  if (normalized.includes('esparrago') || normalized.includes('espárrago')) return 'esparragos'
+  if (normalized.includes('bulon') || normalized.includes('bulón')) return 'bulones'
+  if (normalized.includes('anclaje')) return 'anclajes'
+  if (normalized.includes('maquinaria') || normalized.includes('pesada')) return 'fijacion para maquinaria pesada'
 
   return null
 }
@@ -168,6 +165,11 @@ function detectCategory(query: string): string | null {
 function getProductMaxPrice(product: productIAI): number {
   if (!product.variants || product.variants.length === 0) return 0
   return Math.max(...product.variants.map((variant) => variant.price || 0))
+}
+
+function getProductMinPrice(product: productIAI): number {
+  if (!product.variants || product.variants.length === 0) return 0
+  return Math.min(...product.variants.map((variant) => variant.price || 0))
 }
 
 function isMostExpensiveQuery(query: string): boolean {
@@ -207,7 +209,7 @@ function prioritizeProductsByQuery(query: string, products: productIAI[] | null)
 
   if (isCheapestQuery(query)) {
     const sortedByPriceAsc = [...products].sort(
-      (a, b) => getProductMaxPrice(a) - getProductMaxPrice(b),
+      (a, b) => getProductMinPrice(a) - getProductMinPrice(b),
     )
 
     if (isSingleCheapestQuery(query)) {
@@ -231,10 +233,10 @@ function buildSalesAssistantReply(query: string): string {
 
   if (category && budget) {
     return [
-      `Perfecto, te ayudo como vendedor para buscar un ${category} por S/ ${budget}.`,
+      `Perfecto, te ayudo como asesor para buscar ${category} por S/ ${budget}.`,
       'Para recomendarte bien, confirmame 2 cosas:',
-      '1) Uso principal (gaming, oficina, estudio o edicion).',
-      '2) Si prefieres alguna marca.',
+      '1) Medida/tipo de rosca (por ejemplo M10x1.5).',
+      '2) Aplicacion (estructura, vibracion, maquinaria pesada, etc.).',
       'Con eso te paso opciones concretas y una recomendacion final.',
     ].join('\n')
   }
@@ -242,25 +244,25 @@ function buildSalesAssistantReply(query: string): string {
   if (category) {
     return [
       `Excelente, te ayudo a elegir un ${category}.`,
-      'Dime tu presupuesto aproximado en soles y el uso principal.',
-      'Ejemplo: "quiero un mouse para gaming de 120 soles".',
+      'Dime tu presupuesto aproximado en soles y la aplicacion.',
+      'Ejemplo: "quiero pernos M12 para maquinaria pesada por 200 soles".',
     ].join('\n')
   }
 
   if (budget) {
     return [
       `Genial, trabajemos con un presupuesto de S/ ${budget}.`,
-      'Que producto estas buscando exactamente (mouse, teclado, ram, ssd, monitor, etc.)?',
-      'Tambien dime el uso y te doy una recomendacion concreta.',
+      'Que producto buscas exactamente (pernos, tuercas, arandelas, anclajes)?',
+      'Tambien dime medida, rosca y aplicacion para darte una recomendacion precisa.',
     ].join('\n')
   }
 
   return [
-    'Te atiendo como vendedor y te ayudo a elegir la mejor opcion.',
+    'Te atiendo como asesor tecnico y te ayudo a elegir la mejor opcion.',
     'Para empezar, dime:',
-    '1) Que producto buscas.',
+    '1) Que producto buscas (perno, tuerca, arandela, anclaje).',
     '2) Tu presupuesto en soles.',
-    '3) Para que lo usaras (gaming, oficina, estudio o edicion).',
+    '3) Medida/rosca y para que aplicacion lo usaras (maquinaria pesada, estructura, etc.).',
   ].join('\n')
 }
 
@@ -301,28 +303,28 @@ function buildInteractiveLocalReply(query: string): string | null {
     return [
       'Hola, soy tu asistente de FERREBOM. Listo para ayudarte.',
       'Puedes preguntarme, por ejemplo:',
-      '- "Recomiendame una RAM para gaming"',
-      '- "Que diferencia hay entre RAM y SSD"',
-      '- "Que mouse me recomiendas por 100 soles"',
+      '- "Recomiendame pernos para maquinaria pesada"',
+      '- "Que diferencia hay entre perno grado 8.8 y 10.9"',
+      '- "Cual es el producto mas barato y cual el mas caro"',
     ].join('\n')
   }
 
   if (includesAnyKeyword(normalized, HELP_KEYWORDS)) {
     return [
       'Puedo ayudarte en 3 cosas principales:',
-      '1) Recomendar productos por presupuesto y uso.',
-      '2) Explicar diferencias tecnicas entre componentes.',
-      '3) Buscar disponibilidad de productos en catalogo.',
-      'Si quieres, empezamos con: "tengo 300 soles para mejorar mi PC".',
+      '1) Recomendar pernos, tuercas y arandelas por presupuesto y aplicacion.',
+      '2) Explicar diferencias tecnicas de rosca, grado, material y resistencia.',
+      '3) Buscar disponibilidad en catalogo y darte atajo directo al producto para comprar.',
+      'Si quieres, empezamos con: "tengo 300 soles para pernos M12 de alta resistencia".',
     ].join('\n')
   }
 
   if (includesAnyKeyword(normalized, THANKS_KEYWORDS)) {
-    return 'De nada. Si quieres, te puedo recomendar opciones segun tu presupuesto y tipo de uso.'
+    return 'De nada. Si quieres, te recomiendo opciones segun medida, presupuesto y aplicacion.'
   }
 
   if (includesAnyKeyword(normalized, BYE_KEYWORDS)) {
-    return 'Perfecto. Cuando quieras, vuelves y te ayudo con cualquier consulta de productos.'
+    return 'Perfecto. Cuando quieras, vuelves y te ayudo con cualquier consulta de pernos, tuercas o maquinaria pesada.'
   }
 
   return null
@@ -343,7 +345,6 @@ export const useChatStore = defineStore('chat', () => {
   const conversationId = ref<string | null>(null)
   const isLoading = ref(false)
   const iaService = new IaService()
-  const productSService = new ProductSService()
 
   // Computed
   const hasMessages = computed(() => messages.value.length > 0)
@@ -360,61 +361,6 @@ export const useChatStore = defineStore('chat', () => {
 
   function closeChat() {
     isOpen.value = false
-  }
-
-  async function getMostExpensiveProductReply(): Promise<string | null> {
-    try {
-      // El backend actual no garantiza sort por precio, asi que calculamos el maximo aqui.
-      const response = await productSService.getWithFilters()
-      const products = response?.data || []
-
-      if (products.length === 0) {
-        return null
-      }
-
-      const mostExpensiveProduct = [...products].sort(
-        (a, b) => Number(b.variant?.selling_price || 0) - Number(a.variant?.selling_price || 0),
-      )[0]
-
-      const price = Number(mostExpensiveProduct.variant?.selling_price || 0)
-      const formattedPrice = Number.isFinite(price) ? price.toFixed(2) : '0.00'
-
-      return [
-        `El producto mas caro disponible actualmente es ${mostExpensiveProduct.name} ${mostExpensiveProduct.model}.`,
-        `Precio: S/. ${formattedPrice}.`,
-        'Si quieres, te muestro tambien alternativas un poco mas economicas.',
-      ].join(' ')
-    } catch (error) {
-      console.error('Error obteniendo producto mas caro:', error)
-      return null
-    }
-  }
-
-  async function getCheapestProductReply(): Promise<string | null> {
-    try {
-      const response = await productSService.getWithFilters()
-      const products = response?.data || []
-
-      if (products.length === 0) {
-        return null
-      }
-
-      const cheapestProduct = [...products].sort(
-        (a, b) => Number(a.variant?.selling_price || 0) - Number(b.variant?.selling_price || 0),
-      )[0]
-
-      const price = Number(cheapestProduct.variant?.selling_price || 0)
-      const formattedPrice = Number.isFinite(price) ? price.toFixed(2) : '0.00'
-
-      return [
-        `El producto mas barato disponible actualmente es ${cheapestProduct.name} ${cheapestProduct.model}.`,
-        `Precio: S/. ${formattedPrice}.`,
-        'Si quieres, tambien te muestro opciones con mejor rendimiento.',
-      ].join(' ')
-    } catch (error) {
-      console.error('Error obteniendo producto mas barato:', error)
-      return null
-    }
   }
 
   async function sendMessage(query: string) {
@@ -439,32 +385,6 @@ export const useChatStore = defineStore('chat', () => {
         timestamp: new Date(),
       })
       return
-    }
-
-    if (isMostExpensiveQuery(normalizedQuery)) {
-      const expensiveReply = await getMostExpensiveProductReply()
-      if (expensiveReply) {
-        messages.value.push({
-          id: `ai-expensive-${Date.now()}`,
-          type: 'ai',
-          content: expensiveReply,
-          timestamp: new Date(),
-        })
-        return
-      }
-    }
-
-    if (isCheapestQuery(normalizedQuery)) {
-      const cheapestReply = await getCheapestProductReply()
-      if (cheapestReply) {
-        messages.value.push({
-          id: `ai-cheapest-${Date.now()}`,
-          type: 'ai',
-          content: cheapestReply,
-          timestamp: new Date(),
-        })
-        return
-      }
     }
 
     // Mostrar indicador de carga
@@ -521,7 +441,7 @@ export const useChatStore = defineStore('chat', () => {
         id: 'welcome',
         type: 'ai',
         content:
-          '¡Hola! 👋 Soy tu asistente de compras con IA. ¿Qué periférico estás buscando hoy?',
+          'Hola. Soy tu asistente FERREBOM para pernos, tuercas, arandelas y maquinaria pesada. ¿Que necesitas hoy?',
         timestamp: new Date(),
       }
       messages.value.push(welcomeMessage)
