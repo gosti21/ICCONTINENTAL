@@ -5,6 +5,7 @@ namespace App\Services\Api\v1\Ia;
 use App\Contracts\Api\v1\Ia\ProductIaInterface;
 use App\Http\Resources\Api\v1\Ia\ProductIaResource;
 use Exception;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -35,53 +36,52 @@ class RecommendationIAService
      */
     public function recommend(string $query, ?string $conversationId = null): array
     {
-        $queryLower = Str::lower($query);
+        $resolvedConversationId = $conversationId ?: Str::uuid()->toString();
+        $conversationState = $this->getConversationState($resolvedConversationId);
+        $conversationState = $this->mergeConversationState($conversationState, $query);
+        $contextualQuery = $this->buildContextualQuery($query, $conversationState);
+
+        $queryLower = Str::lower($contextualQuery);
 
         if ($this->isMostExpensiveIntent($queryLower)) {
-            return $this->buildPriceExtremeResponse($query, $conversationId, true);
+            return $this->buildPriceExtremeResponse($query, $resolvedConversationId, true, $conversationState);
         }
 
         if ($this->isCheapestIntent($queryLower)) {
-            return $this->buildPriceExtremeResponse($query, $conversationId, false);
+            return $this->buildPriceExtremeResponse($query, $resolvedConversationId, false, $conversationState);
         }
 
-        $queryTokens = $this->tokenizeQuery($query);
+        $queryTokens = $this->tokenizeQuery($contextualQuery);
         $requestedLimit = $this->resolveRequestedLimit($queryLower);
 
-        $inStockRecommendations = $this->buildLocalRecommendations($query, $requestedLimit, true);
-        $similarWithoutStock = $this->buildLocalRecommendations($query, min(3, $requestedLimit), false);
+        $inStockRecommendations = $this->buildLocalRecommendations($contextualQuery, $requestedLimit, true);
+        $similarWithoutStock = $this->buildLocalRecommendations($contextualQuery, min(3, $requestedLimit), false);
 
         if (empty($inStockRecommendations) && !empty($similarWithoutStock)) {
-            return [
+            return $this->finalizeResponse($resolvedConversationId, $conversationState, [
                 'type' => 'local_similar_no_stock',
                 'message' => $this->buildNoStockAlternativeMessage($similarWithoutStock, $query),
                 'products' => $similarWithoutStock,
-                'conversation_id' => $conversationId ?: Str::uuid()->toString(),
-                'question_count' => 1,
-            ];
+            ]);
         }
 
         $localRecommendations = $inStockRecommendations;
 
         if (empty($localRecommendations)) {
-            return [
+            return $this->finalizeResponse($resolvedConversationId, $conversationState, [
                 'type' => 'local_no_match',
                 'message' => $this->buildLocalMessage([], $query),
                 'products' => [],
-                'conversation_id' => $conversationId ?: Str::uuid()->toString(),
-                'question_count' => 1,
-            ];
+            ]);
         }
 
-        $compatibilityQuestion = $this->buildCompatibilityQuestion($queryLower, $queryTokens);
+        $compatibilityQuestion = $this->buildCompatibilityQuestion($queryLower, $queryTokens, $conversationState);
         if ($compatibilityQuestion) {
-            return [
+            return $this->finalizeResponse($resolvedConversationId, $conversationState, [
                 'type' => 'local_consultative',
                 'message' => $this->buildConsultativeMessage($localRecommendations, $query, $compatibilityQuestion),
                 'products' => $localRecommendations,
-                'conversation_id' => $conversationId ?: Str::uuid()->toString(),
-                'question_count' => 1,
-            ];
+            ]);
         }
 
         try {
@@ -100,7 +100,7 @@ class RecommendationIAService
                             ],
                             [
                                 'role' => 'user',
-                                'content' => $this->buildOpenAiPrompt($query, $localRecommendations),
+                                'content' => $this->buildOpenAiPrompt($contextualQuery, $localRecommendations),
                             ],
                         ],
                         'temperature' => 0.7,
@@ -119,20 +119,18 @@ class RecommendationIAService
                 $responseData = $response->json();
                 $message = data_get($responseData, 'choices.0.message.content', 'No se recibió respuesta de OpenAI.');
 
-                return [
+                return $this->finalizeResponse($resolvedConversationId, $conversationState, [
                     'type' => 'openai',
                     'message' => trim($message),
                     'products' => $localRecommendations,
-                    'conversation_id' => $conversationId ?: Str::uuid()->toString(),
-                    'question_count' => 1,
-                ];
+                ]);
             }
 
             if ($this->aiApiUrl) {
                 $response = Http::timeout(160)
                     ->post("{$this->aiApiUrl}/recommend", [
-                        'query' => $query,
-                        'conversation_id' => $conversationId,
+                        'query' => $contextualQuery,
+                        'conversation_id' => $resolvedConversationId,
                     ]);
 
                 if ($response->failed()) {
@@ -146,35 +144,29 @@ class RecommendationIAService
 
                 $external = $response->json();
 
-                return [
+                return $this->finalizeResponse($resolvedConversationId, $conversationState, [
                     'type' => data_get($external, 'type', 'local'),
                     'message' => data_get($external, 'message', $this->buildLocalMessage($localRecommendations, $query)),
                     'products' => data_get($external, 'products') ?: $localRecommendations,
-                    'conversation_id' => data_get($external, 'conversation_id', $conversationId ?: Str::uuid()->toString()),
-                    'question_count' => data_get($external, 'question_count', 1),
-                ];
+                ]);
             }
 
-            return [
+            return $this->finalizeResponse($resolvedConversationId, $conversationState, [
                 'type' => 'local',
                 'message' => $this->buildLocalMessage($localRecommendations, $query),
                 'products' => $localRecommendations,
-                'conversation_id' => $conversationId ?: Str::uuid()->toString(),
-                'question_count' => 1,
-            ];
+            ]);
         } catch (Exception $e) {
             Log::error('AI Recommendation Error', [
                 'message' => $e->getMessage(),
                 'query' => $query
             ]);
 
-            return [
+            return $this->finalizeResponse($resolvedConversationId, $conversationState, [
                 'type' => 'local_fallback',
                 'message' => $this->buildLocalMessage($localRecommendations, $query),
                 'products' => $localRecommendations,
-                'conversation_id' => $conversationId ?: Str::uuid()->toString(),
-                'question_count' => 1,
-            ];
+            ]);
         }
     }
 
@@ -543,8 +535,13 @@ class RecommendationIAService
         );
     }
 
-    protected function buildCompatibilityQuestion(string $queryLower, array $tokens): ?string
+    protected function buildCompatibilityQuestion(string $queryLower, array $tokens, array $conversationState = []): ?string
     {
+        $pendingByState = $this->buildPendingQuestionFromState($conversationState);
+        if ($pendingByState !== null) {
+            return $pendingByState;
+        }
+
         $hasFastenerIntent = $this->hasAnyKeyword($queryLower, [
             'perno', 'pernos', 'tuerca', 'tuercas', 'arandela', 'arandelas', 'bulon', 'espárrago', 'esparrago'
         ]) || count(array_intersect($tokens, ['perno', 'pernos', 'tuerca', 'tuercas', 'arandela', 'arandelas'])) > 0;
@@ -615,18 +612,16 @@ class RecommendationIAService
         ]);
     }
 
-    protected function buildPriceExtremeResponse(string $query, ?string $conversationId, bool $highest): array
+    protected function buildPriceExtremeResponse(string $query, string $conversationId, bool $highest, array $conversationState = []): array
     {
         $products = $this->buildCatalogProductsForChat(true);
 
         if (empty($products)) {
-            return [
+            return $this->finalizeResponse($conversationId, $conversationState, [
                 'type' => 'local_no_match',
                 'message' => $this->buildLocalMessage([], $query),
                 'products' => [],
-                'conversation_id' => $conversationId ?: Str::uuid()->toString(),
-                'question_count' => 1,
-            ];
+            ]);
         }
 
         $sorted = collect($products)->sortBy(function ($product) use ($highest) {
@@ -647,13 +642,231 @@ class RecommendationIAService
             ? 'El producto de mayor precio disponible actualmente es'
             : 'El producto de menor precio disponible actualmente es';
 
-        return [
+        return $this->finalizeResponse($conversationId, $conversationState, [
             'type' => $highest ? 'local_max_price' : 'local_min_price',
             'message' => "{$intro} {$selected['name']} {$selected['model']}, con precio de S/ {$priceText}. Te dejo el atajo para abrir el producto y comprar.",
             'products' => [$selected],
-            'conversation_id' => $conversationId ?: Str::uuid()->toString(),
+        ]);
+    }
+
+    protected function finalizeResponse(string $conversationId, array $conversationState, array $payload): array
+    {
+        $this->saveConversationState($conversationId, $conversationState);
+
+        return [
+            ...$payload,
+            'conversation_id' => $conversationId,
             'question_count' => 1,
         ];
+    }
+
+    protected function getConversationState(string $conversationId): array
+    {
+        return Cache::get($this->conversationCacheKey($conversationId), []);
+    }
+
+    protected function saveConversationState(string $conversationId, array $state): void
+    {
+        Cache::put($this->conversationCacheKey($conversationId), $state, now()->addHours(6));
+    }
+
+    protected function conversationCacheKey(string $conversationId): string
+    {
+        return "ia:conversation:{$conversationId}";
+    }
+
+    protected function mergeConversationState(array $state, string $query): array
+    {
+        $queryLower = Str::lower($query);
+
+        $productType = $this->extractProductType($queryLower);
+        if ($productType) {
+            $state['product_type'] = $productType;
+        }
+
+        $measure = $this->extractMeasure($query);
+        if ($measure) {
+            $state['measure'] = $measure;
+        }
+
+        $grade = $this->extractGrade($queryLower);
+        if ($grade) {
+            $state['grade'] = $grade;
+        }
+
+        $application = $this->extractApplication($queryLower);
+        if ($application) {
+            $state['application'] = $application;
+        }
+
+        $equipment = $this->extractEquipment($query);
+        if ($equipment) {
+            $state['equipment'] = $equipment;
+        }
+
+        $budget = $this->extractBudget($queryLower);
+        if ($budget !== null) {
+            $state['budget'] = $budget;
+        }
+
+        $headType = $this->extractHeadType($queryLower);
+        if ($headType) {
+            $state['head_type'] = $headType;
+        }
+
+        $quantity = $this->extractQuantity($queryLower);
+        if ($quantity !== null) {
+            $state['quantity'] = $quantity;
+        }
+
+        return $state;
+    }
+
+    protected function buildContextualQuery(string $query, array $state): string
+    {
+        $fragments = [];
+
+        if (!empty($state['product_type'])) $fragments[] = 'producto ' . $state['product_type'];
+        if (!empty($state['measure'])) $fragments[] = 'medida ' . $state['measure'];
+        if (!empty($state['grade'])) $fragments[] = 'grado ' . $state['grade'];
+        if (!empty($state['application'])) $fragments[] = 'aplicacion ' . $state['application'];
+        if (!empty($state['equipment'])) $fragments[] = 'equipo ' . $state['equipment'];
+        if (!empty($state['budget'])) $fragments[] = 'presupuesto S/' . $state['budget'];
+
+        if (empty($fragments)) {
+            return $query;
+        }
+
+        return trim($query . ' ' . implode(' ', $fragments));
+    }
+
+    protected function buildPendingQuestionFromState(array $state): ?string
+    {
+        $required = [
+            'product_type' => 'producto',
+            'measure' => 'medida',
+            'grade' => 'grado',
+            'application' => 'aplicacion',
+            'equipment' => 'equipo',
+            'budget' => 'presupuesto',
+        ];
+
+        $missing = [];
+        foreach ($required as $key => $label) {
+            if (empty($state[$key])) {
+                $missing[] = $label;
+            }
+        }
+
+        if (!empty($missing)) {
+            if (count($missing) === 1) {
+                return 'Solo necesito confirmar un dato adicional: ' . $missing[0] . '.';
+            }
+
+            return 'Ya tengo parte de la informacion. Para continuar solo faltan estos datos: ' . implode(', ', $missing) . '.';
+        }
+
+        $optionalMissing = [];
+        if (empty($state['head_type'])) {
+            $optionalMissing[] = 'tipo de cabeza (Hexagonal, Allen o Torx)';
+        }
+        if (empty($state['quantity'])) {
+            $optionalMissing[] = 'cantidad de unidades';
+        }
+
+        if (!empty($optionalMissing)) {
+            return 'Perfecto, gracias. Ya tengo producto, medida, grado, equipo, aplicacion y presupuesto. Solo necesito: ' . implode(' y ', $optionalMissing) . '.';
+        }
+
+        return null;
+    }
+
+    protected function extractProductType(string $queryLower): ?string
+    {
+        if ($this->hasAnyKeyword($queryLower, ['perno', 'pernos'])) return 'perno';
+        if ($this->hasAnyKeyword($queryLower, ['tuerca', 'tuercas'])) return 'tuerca';
+        if ($this->hasAnyKeyword($queryLower, ['arandela', 'arandelas'])) return 'arandela';
+        if ($this->hasAnyKeyword($queryLower, ['anclaje', 'anclajes'])) return 'anclaje';
+        if ($this->hasAnyKeyword($queryLower, ['bulon', 'bulones', 'bulón'])) return 'bulon';
+        return null;
+    }
+
+    protected function extractMeasure(string $query): ?string
+    {
+        if (preg_match('/\b(M\d{1,2}\s*[xX]\s*\d{1,3})\b/u', $query, $matches)) {
+            return strtoupper(str_replace(' ', '', $matches[1]));
+        }
+
+        if (preg_match('/\b(M\d{1,2})\b/u', $query, $matches)) {
+            return strtoupper($matches[1]);
+        }
+
+        return null;
+    }
+
+    protected function extractGrade(string $queryLower): ?string
+    {
+        if (preg_match('/\b(8\.8|10\.9|12\.9)\b/u', $queryLower, $matches)) {
+            return $matches[1];
+        }
+
+        return null;
+    }
+
+    protected function extractApplication(string $queryLower): ?string
+    {
+        if ($this->hasAnyKeyword($queryLower, ['maquinaria pesada', 'maquinaria', 'pesada'])) {
+            return 'maquinaria pesada';
+        }
+
+        if ($this->hasAnyKeyword($queryLower, ['estructura', 'estructural'])) {
+            return 'estructura';
+        }
+
+        if ($this->hasAnyKeyword($queryLower, ['vibracion', 'vibración'])) {
+            return 'vibracion';
+        }
+
+        return null;
+    }
+
+    protected function extractEquipment(string $query): ?string
+    {
+        if (preg_match('/\b(Volvo\s+[A-Z]{0,3}\d{2,4}[A-Z0-9-]*)\b/u', $query, $matches)) {
+            return trim($matches[1]);
+        }
+
+        if (preg_match('/\b(CAT|Caterpillar|Komatsu|Hyundai|JCB|John\s+Deere)\s+[A-Z0-9-]{2,}\b/ui', $query, $matches)) {
+            return trim($matches[0]);
+        }
+
+        return null;
+    }
+
+    protected function extractBudget(string $queryLower): ?float
+    {
+        if (preg_match('/(\d+[\.,]?\d*)\s*(soles|s\/?\.?|pen)/u', $queryLower, $matches)) {
+            return (float) str_replace(',', '.', $matches[1]);
+        }
+
+        return null;
+    }
+
+    protected function extractHeadType(string $queryLower): ?string
+    {
+        if ($this->hasAnyKeyword($queryLower, ['hexagonal', 'hex'])) return 'hexagonal';
+        if ($this->hasAnyKeyword($queryLower, ['allen'])) return 'allen';
+        if ($this->hasAnyKeyword($queryLower, ['torx'])) return 'torx';
+        return null;
+    }
+
+    protected function extractQuantity(string $queryLower): ?int
+    {
+        if (preg_match('/\b(\d{1,5})\s*(unidades|unidad|pzas|pcs|pernos|tuercas)\b/u', $queryLower, $matches)) {
+            return (int) $matches[1];
+        }
+
+        return null;
     }
 
     protected function buildCatalogProductsForChat(bool $onlyInStock = true): array

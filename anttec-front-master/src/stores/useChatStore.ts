@@ -267,27 +267,9 @@ function buildSalesAssistantReply(query: string): string {
 }
 
 function resolveAiMessage(query: string, response: chatRecommendI): string {
-  // Priorizar respuestas conversacionales locales para evitar respuestas de catalogo en saludos.
-  const localSmallTalkReply = buildInteractiveLocalReply(query)
-  if (localSmallTalkReply) {
-    return localSmallTalkReply
+  if (response.message?.trim()) {
+    return response.message
   }
-
-  const hasProducts = Boolean(response.products && response.products.length > 0)
-  if (hasProducts && response.message?.trim()) return response.message
-
-  if (!response.message?.trim()) {
-    return buildSalesAssistantReply(query)
-  }
-
-  const responseType = normalizeText(response.type || '')
-  const messageIsNoProducts = isNoProductsLikeMessage(response.message)
-  const typeSuggestsNoProducts =
-    responseType.includes('no_product') ||
-    responseType.includes('no-products') ||
-    responseType.includes('sin_product')
-
-  if (!messageIsNoProducts && !typeSuggestsNoProducts) return response.message
 
   return buildSalesAssistantReply(query)
 }
