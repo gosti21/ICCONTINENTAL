@@ -5,7 +5,7 @@ PORT="${PORT:-10000}"
 sed -i "s/PORT_PLACEHOLDER/${PORT}/" /etc/nginx/sites-available/default
 
 php artisan migrate --force
-php artisan db:seed --class=UserSeeder --force || true
+php artisan db:seed --class=DatabaseSeeder --force || true
 php artisan storage:link || true
 php artisan config:cache
 
