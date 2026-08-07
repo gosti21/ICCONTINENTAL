@@ -21,6 +21,8 @@ class UserSeeder extends Seeder
             ]
         );
 
+        $user->syncRoles(['admin']);
+
         if ($user->employee === null) {
             $employee = $user->employee()->create([
                 'salary' => '1500.00',

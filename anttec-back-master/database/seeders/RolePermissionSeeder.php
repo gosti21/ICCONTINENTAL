@@ -84,9 +84,6 @@ class RolePermissionSeeder extends Seeder
         $adminRole = Role::firstOrCreate(['name' => 'admin']);
         $adminRole->syncPermissions(Permission::all());
 
-        $user = User::find(1);
-        if ($user) {
-            $user->syncRoles(['admin']);
-        }
+
     }
 }

@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             PrefixSeeder::class,
             BranchSeeder::class,
             DocumentTypeSeeder::class,
+            RolePermissionSeeder::class,
             UserSeeder::class,
             /* CategorySeeder::class,
             SubcategorySeeder::class,
@@ -25,7 +26,6 @@ class DatabaseSeeder extends Seeder
             SpecificationSeeder::class, */
             AddressSeeder::class,
             PaymentMethodSeeder::class,
-            RolePermissionSeeder::class,
         ]);
     }
 }
