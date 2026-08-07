@@ -120,6 +120,7 @@ onMounted(async () => {
           id="email"
           type="email"
           name="email"
+          autocomplete="email"
           class="mt-1 bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-900 dark:border-gray-700 dark:placeholder-gray-400 dark:text-gray-200 dark:focus:ring-indigo-600 dark:focus:border-indigo-600 focus:outline-none focus:ring-1"
         />
         <span class="text-red-400">{{ errors.email }}</span>
@@ -135,6 +136,7 @@ onMounted(async () => {
             v-bind="passwordAttrs"
             id="password"
             name="password"
+            autocomplete="current-password"
             :type="showPassword ? 'text' : 'password'"
             class="mt-1 bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 pr-10 dark:bg-gray-900 dark:border-gray-700 dark:placeholder-gray-400 dark:text-gray-200 dark:focus:ring-indigo-600 dark:focus:border-indigo-600 focus:outline-none focus:ring-1"
           />
