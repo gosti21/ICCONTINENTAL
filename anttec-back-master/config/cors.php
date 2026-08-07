@@ -19,7 +19,12 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['*'],
+    'allowed_origins' => array_filter([
+        env('APP_URL_FRONT', 'http://localhost:5173'),
+        'http://localhost:5173',
+        'https://iccontinental-1-m0s1.onrender.com',
+        'https://iccontinental-lico.onrender.com',
+    ]),
 
     'allowed_origins_patterns' => [],
 
