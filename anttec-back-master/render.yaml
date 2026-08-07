@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: anttec-back
+    runtime: docker
+    repo: https://github.com/your-user/your-repo
+    plan: free
+    rootDir: .
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: APP_URL
+        value: https://anttec-back-yjry.onrender.com
+      - key: APP_URL_FRONT
+        value: https://your-front-domain.com
+      - key: PORT
+        value: 10000
