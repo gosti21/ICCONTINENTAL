@@ -82,10 +82,18 @@ class SendVoucherEmail implements ShouldQueue
 
             // Los comprobantes generados por APIsPERU se guardan localmente.
             // Esto tambien soporta registros anteriores cuya ruta sea relativa.
-            $storagePath = $this->publicStoragePath((string) $voucher->path);
-            if ($storagePath !== null && Storage::disk('public')->exists($storagePath)) {
-                $pdfContent = Storage::disk('public')->get($storagePath);
+            if ($voucher->content) {
+                $pdfContent = base64_decode((string) $voucher->content, true);
+                if ($pdfContent === false) {
+                    throw new \RuntimeException('El contenido almacenado del comprobante no es valido');
+                }
             } else {
+                $storagePath = $this->publicStoragePath((string) $voucher->path);
+            }
+
+            if (! isset($pdfContent) && $storagePath !== null && Storage::disk('public')->exists($storagePath)) {
+                $pdfContent = Storage::disk('public')->get($storagePath);
+            } elseif (! isset($pdfContent)) {
                 $client = new \GuzzleHttp\Client([
                     'timeout' => 30,
                     'connect_timeout' => 10,

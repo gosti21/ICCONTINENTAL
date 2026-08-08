@@ -17,14 +17,24 @@ Route::get('/vouchers/{order}/download', function (Order $order) {
     $voucherUrl = (string) $voucher->path;
     $appUrl = rtrim((string) config('app.url'), '/');
 
-    if (str_starts_with($voucherUrl, $appUrl . $appUrl)) {
+    if (str_starts_with($voucherUrl, $appUrl.$appUrl)) {
         $voucherUrl = substr($voucherUrl, strlen($appUrl));
     }
 
     $parsedPath = parse_url($voucherUrl, PHP_URL_PATH) ?: '';
     $fileName = sprintf('%s-%s.pdf', strtolower((string) $voucher->type), $order->order_number);
 
-    if (str_starts_with($voucherUrl, $appUrl . '/storage/')) {
+    if ($voucher->content) {
+        $pdfContent = base64_decode((string) $voucher->content, true);
+        abort_unless($pdfContent !== false, 500, 'Contenido del comprobante invalido');
+
+        return response($pdfContent, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="'.$fileName.'"',
+        ]);
+    }
+
+    if (str_starts_with($voucherUrl, $appUrl.'/storage/')) {
         $relativePath = ltrim(str_replace('/storage/', '', $parsedPath), '/');
         abort_unless(Storage::disk('public')->exists($relativePath), 404, 'Archivo no encontrado');
 
@@ -36,6 +46,6 @@ Route::get('/vouchers/{order}/download', function (Order $order) {
 
     return response($response->body(), 200, [
         'Content-Type' => $response->header('Content-Type', 'application/pdf'),
-        'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+        'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
     ]);
 })->name('vouchers.download');

@@ -52,8 +52,9 @@ class ApisPeruService
                 strtolower($voucherType),
                 $order->order_number
             );
-            Storage::disk('public')->put($fileName, $pdfResponse->body());
-            $publicUrl = url(Storage::disk('public')->url($fileName));
+            $pdfContent = $pdfResponse->body();
+            Storage::disk('public')->put($fileName, $pdfContent);
+            $publicUrl = route('vouchers.download', ['order' => $order->id]);
 
             $order->voucher()->updateOrCreate([
                 'order_id' => $order->id,
@@ -61,6 +62,7 @@ class ApisPeruService
                 'type' => $voucherType,
                 'voucher_number' => $order->order_number,
                 'path' => $publicUrl,
+                'content' => base64_encode($pdfContent),
                 'order_id' => $order->id,
             ]);
 

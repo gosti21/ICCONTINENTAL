@@ -13,8 +13,11 @@ class Voucher extends Model
         'type',
         'voucher_number',
         'path',
+        'content',
         'order_id',
     ];
+
+    protected $hidden = ['content'];
 
     protected function path(): Attribute
     {
