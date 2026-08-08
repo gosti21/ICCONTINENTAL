@@ -13,6 +13,8 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class SendVoucherEmail implements ShouldQueue
 {
@@ -47,7 +49,7 @@ class SendVoucherEmail implements ShouldQueue
     {
         try {
             $voucher = $this->order->voucher;
-            if (!$voucher || !$voucher->path) {
+            if (! $voucher || ! $voucher->path) {
                 // 9. GENERAR COMPROBANTE EN NUBEFACT
                 $voucherResult = $electronicInvoiceService->generateVoucher(
                     $this->order,
@@ -59,14 +61,14 @@ class SendVoucherEmail implements ShouldQueue
                     $this->voucherType
                 );
 
-                if (!$voucherResult['success']) {
+                if (! $voucherResult['success']) {
                     // Log el error pero no fallar la transacción
                     Log::error('Error generando comprobante NubeFact', [
                         'order_id' => $this->order->id,
-                        'error' => $voucherResult['error']
+                        'error' => $voucherResult['error'],
                     ]);
 
-                    throw new \Exception('No se pudo generar el comprobante: ' . ($voucherResult['error'] ?? 'Error desconocido'));
+                    throw new \Exception('No se pudo generar el comprobante: '.($voucherResult['error'] ?? 'Error desconocido'));
                 }
 
                 $this->order->refresh();
@@ -74,19 +76,28 @@ class SendVoucherEmail implements ShouldQueue
             }
 
             // 3. VALIDAR QUE TENGAMOS LA URL DEL PDF
-            if (!$voucher || !$voucher->path) {
+            if (! $voucher || ! $voucher->path) {
                 throw new \Exception('No se encontró la URL del comprobante después de generarlo');
             }
 
-            // 4. DESCARGAR EL PDF DESDE LA URL DE NUBEFACT
-            $client = new \GuzzleHttp\Client([
-                'timeout' => 30,
-                'connect_timeout' => 10,
-                'http_errors' => true, // Lanzar excepciones en errores HTTP
-            ]);
+            // Los comprobantes generados por APIsPERU se guardan localmente.
+            // Esto tambien soporta registros anteriores cuya ruta sea relativa.
+            $storagePath = $this->publicStoragePath((string) $voucher->path);
+            if ($storagePath !== null && Storage::disk('public')->exists($storagePath)) {
+                $pdfContent = Storage::disk('public')->get($storagePath);
+            } else {
+                $client = new \GuzzleHttp\Client([
+                    'timeout' => 30,
+                    'connect_timeout' => 10,
+                    'http_errors' => true,
+                ]);
 
-            $response = $client->get($voucher->path);
-            $pdfContent = $response->getBody()->getContents();
+                $pdfUrl = Str::startsWith((string) $voucher->path, ['http://', 'https://'])
+                    ? (string) $voucher->path
+                    : url((string) $voucher->path);
+                $response = $client->get($pdfUrl);
+                $pdfContent = $response->getBody()->getContents();
+            }
 
             // 7. ENVIAR EMAIL CON EL PDF ADJUNTO
             Mail::to($this->user->email)->send(
@@ -97,37 +108,45 @@ class SendVoucherEmail implements ShouldQueue
             // Error de conexión - probablemente NubeFact no disponible
             Log::error('Error de conexión al descargar PDF de NubeFact', [
                 'order_id' => $this->order->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             throw $e; // Reintentar
-
         } catch (\GuzzleHttp\Exception\RequestException $e) {
             // Error HTTP (404, 500, etc)
             Log::error('Error HTTP al descargar PDF de NubeFact', [
                 'order_id' => $this->order->id,
                 'status_code' => $e->getResponse()?->getStatusCode(),
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             // Si es 404, tal vez el PDF aún no está listo
             if ($e->getResponse()?->getStatusCode() === 404) {
                 Log::warning('PDF no encontrado (404), probablemente aún no está listo', [
-                    'order_id' => $this->order->id
+                    'order_id' => $this->order->id,
                 ]);
             }
 
             throw $e; // Reintentar
-
         } catch (\Exception $e) {
             Log::error('Error general al procesar envío de voucher', [
                 'order_id' => $this->order->id,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             throw $e; // Reintentar
         }
+    }
+
+    protected function publicStoragePath(string $voucherPath): ?string
+    {
+        $path = parse_url($voucherPath, PHP_URL_PATH);
+        if (! is_string($path) || ! Str::startsWith($path, '/storage/')) {
+            return null;
+        }
+
+        return Str::after($path, '/storage/');
     }
 
     /**
@@ -138,7 +157,7 @@ class SendVoucherEmail implements ShouldQueue
         // Aquí puedes registrar el error o notificar a los administradores
         Log::error('Error al enviar correo del voucher', [
             'order_id' => $this->order->id,
-            'error' => $exception->getMessage()
+            'error' => $exception->getMessage(),
         ]);
     }
 }

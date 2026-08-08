@@ -8,6 +8,7 @@ class ElectronicInvoiceService
 {
     public function __construct(
         protected NubeFactService $nubeFactService,
+        protected ApisPeruService $apisPeruService,
         protected SunatApiService $sunatApiService,
         protected GreenterSunatService $greenterSunatService,
     ) {}
@@ -15,6 +16,10 @@ class ElectronicInvoiceService
     public function generateVoucher(Order $order, array $customerData, string $voucherType): array
     {
         $provider = strtolower((string) config('integrations.billing.provider', 'nubefact'));
+
+        if ($provider === 'apisperu') {
+            return $this->apisPeruService->generateVoucher($order, $customerData, $voucherType);
+        }
 
         if ($provider === 'sunat') {
             return $this->sunatApiService->generateVoucher($order, $customerData, $voucherType);

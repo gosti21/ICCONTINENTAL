@@ -18,18 +18,45 @@ return [
         */
     'nubefact' => [
         'base_url' => env('NUBEFACT_URL'),
-        //Para ventas online (a4)
+        // Para ventas online (a4)
         'token_online' => env('NUBEFACT_TOKEN_ONLINE'),
         'serie_boleta_online' => env('NUBEFACT_SERIE_BOLETA_ONLINE'),
         'serie_factura_online' => env('NUBEFACT_SERIE_FACTURA_ONLINE'),
-        //Para ventas en tienda (ticket)
+        // Para ventas en tienda (ticket)
         'token_store' => env('NUBEFACT_TOKEN_STORE'),
         'serie_boleta_store' => env('NUBEFACT_SERIE_BOLETA_STORE'),
         'serie_factura_store' => env('NUBEFACT_SERIE_FACTURA_STORE'),
     ],
 
     'billing' => [
-        'provider' => env('BILLING_PROVIDER', 'nubefact'),
+        'provider' => env('BILLING_PROVIDER', env('APISPERU_TOKEN') ? 'apisperu' : 'nubefact'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | APIsPERU - Facturacion electronica
+    |--------------------------------------------------------------------------
+    |
+    | APISPERU_TOKEN debe ser el token permanente de la empresa, no el token
+    | temporal obtenido al iniciar sesion. La empresa, certificado y clave SOL
+    | se configuran previamente en el panel de APIsPERU.
+    |
+    */
+    'apisperu' => [
+        'base_url' => env('APISPERU_URL', 'https://facturacion.apisperu.com/api/v1'),
+        'token' => env('APISPERU_TOKEN'),
+        'ruc' => env('APISPERU_RUC', env('SUNAT_RUC_EMISOR')),
+        'razon_social' => env('APISPERU_RAZON_SOCIAL', env('SUNAT_RAZON_SOCIAL', env('APP_NAME', 'EMPRESA'))),
+        'nombre_comercial' => env('APISPERU_NOMBRE_COMERCIAL', env('SUNAT_NOMBRE_COMERCIAL', env('APP_NAME', 'EMPRESA'))),
+        'ubigeo' => env('APISPERU_UBIGEO', env('SUNAT_UBIGEO', '150101')),
+        'departamento' => env('APISPERU_DEPARTAMENTO', env('SUNAT_DEPARTAMENTO', 'LIMA')),
+        'provincia' => env('APISPERU_PROVINCIA', env('SUNAT_PROVINCIA', 'LIMA')),
+        'distrito' => env('APISPERU_DISTRITO', env('SUNAT_DISTRITO', 'LIMA')),
+        'direccion' => env('APISPERU_DIRECCION', env('SUNAT_DIRECCION', 'SIN DIRECCION')),
+        'serie_boleta_online' => env('APISPERU_SERIE_BOLETA_ONLINE', 'B001'),
+        'serie_factura_online' => env('APISPERU_SERIE_FACTURA_ONLINE', 'F001'),
+        'serie_boleta_store' => env('APISPERU_SERIE_BOLETA_STORE', 'B002'),
+        'serie_factura_store' => env('APISPERU_SERIE_FACTURA_STORE', 'F002'),
     ],
 
     'sunat' => [
@@ -85,5 +112,5 @@ return [
     */
     'ia' => [
         'url_ia' => env('IA_API_URL'),
-    ]
+    ],
 ];

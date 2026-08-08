@@ -12,8 +12,8 @@ services:
       - key: APP_DEBUG
         value: false
       - key: APP_URL
-        value: https://anttec-back-yjry.onrender.com
+        value: https://iccontinental-lico.onrender.com
       - key: APP_URL_FRONT
-        value: https://your-front-domain.com
+        value: https://iccontinental-1-m0s1.onrender.com
       - key: PORT
         value: 10000
