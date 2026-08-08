@@ -2,53 +2,59 @@
 
 namespace App\Services\Api\v1\integrations;
 
-use GuzzleHttp\Client;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class SearchDNIService
 {
-    protected Client $client;
-
-    public function __construct()
-    {
-        $this->client = new Client([
-            'base_uri' => config('integrations.search_apis_net.base_url'),
-            'verify'   => false,
-            'headers'  => [
-                'Authorization' => 'Bearer ' . config('integrations.search_apis_net.token'),
-                'Accept'        => 'application/json',
-                'Content-Type'  => 'application/json',
-                'User-Agent'    => 'Laravel/Guzzle',
-            ],
-            'http_errors'     => false,
-            'connect_timeout' => 8,
-        ]);
-    }
-
     public function searchDNI(string $dni): ?array
     {
-        try {
-            $response = $this->client->get('/v1/reniec/dni', [
-                'query' => ['numero' => $dni],
-            ]);
+        if (! filled(config('integrations.apisnet.token'))) {
+            Log::warning('Consulta DNI no configurada: falta APISNET_TOKEN');
 
-            if ($response->getStatusCode() !== 200) {
+            return null;
+        }
+
+        try {
+            $response = Http::baseUrl(rtrim((string) config('integrations.apisnet.base_url'), '/'))
+                ->withToken((string) config('integrations.apisnet.token'))
+                ->acceptJson()
+                ->withHeaders(['Referer' => 'https://apis.net.pe/api-consulta-dni'])
+                ->connectTimeout(8)
+                ->timeout(15)
+                ->get('reniec/dni', ['numero' => $dni]);
+
+            if (! $response->successful()) {
+                Log::warning('APIS.NET rechazo la consulta DNI', [
+                    'dni' => $dni,
+                    'status' => $response->status(),
+                    'message' => $response->json('message'),
+                ]);
+
                 return null;
             }
 
-            $responseData = json_decode($response->getBody()->getContents(), true);
+            $responseData = $response->json();
+            if (! is_array($responseData)) {
+                return null;
+            }
 
             return [
-                'name'            => $responseData['first_name'] ?? null,
-                'last_name'       => trim(
-                    ($responseData['first_last_name'] ?? '') . ' ' .
-                        ($responseData['second_last_name'] ?? '')
+                'name' => $responseData['nombres'] ?? null,
+                'last_name' => trim(
+                    ($responseData['apellidoPaterno'] ?? '').' '.
+                    ($responseData['apellidoMaterno'] ?? '')
                 ),
-                'document_number' => $responseData['document_number'] ?? $dni,
+                'document_number' => $responseData['numeroDocumento'] ?? $dni,
             ];
+        } catch (ConnectionException $e) {
+            Log::error("No se pudo conectar con APIS.NET para consultar DNI {$dni}: {$e->getMessage()}");
 
+            return null;
         } catch (\Throwable $e) {
-            Log::error("RENIEC error DNI {$dni}: {$e->getMessage()}");
+            Log::error("APIS.NET error DNI {$dni}: {$e->getMessage()}");
+
             return null;
         }
     }

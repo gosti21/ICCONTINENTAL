@@ -6,9 +6,9 @@ return [
         | Credenciales para busqueda en sunat y reniec
         |--------------------------------------------------------------------------
         */
-    'search_apis_net' => [
-        'base_url' => env('BASE_URL_APIS_NET'),
-        'token' => env('TOKEN_APIS_NET'),
+    'apisnet' => [
+        'base_url' => env('APISNET_URL', 'https://api.decolecta.com/v1'),
+        'token' => env('APISNET_TOKEN', env('TOKEN_APIS_NET')),
     ],
 
     /*
