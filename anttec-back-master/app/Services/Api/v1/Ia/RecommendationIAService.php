@@ -13,8 +13,11 @@ use Illuminate\Support\Str;
 class RecommendationIAService
 {
     private ?string $aiApiUrl;
+
     private ?string $openAiKey;
+
     private string $openAiBaseUrl;
+
     private string $openAiModel;
 
     public function __construct(
@@ -24,14 +27,14 @@ class RecommendationIAService
         $this->aiApiUrl = config('integrations.ia.url_ia');
         $this->openAiKey = config('services.openai.api_key');
         $this->openAiBaseUrl = config('services.openai.base_url', 'https://api.openai.com/v1');
-        $this->openAiModel = config('services.openai.model', 'gpt-3.5-turbo');
+        $this->openAiModel = config('services.openai.model', 'gpt-5.4-nano');
     }
 
     /**
      * Envía una consulta al sistema de IA para obtener recomendaciones.
      *
-    * @param string $query Consulta del usuario ("necesito pernos M12 para maquinaria pesada")
-     * @param string|null $conversationId ID de conversación (para seguimiento)
+     * @param  string  $query  Consulta del usuario ("necesito pernos M12 para maquinaria pesada")
+     * @param  string|null  $conversationId  ID de conversación (para seguimiento)
      * @return array Respuesta de la IA
      */
     public function recommend(string $query, ?string $conversationId = null): array
@@ -57,32 +60,9 @@ class RecommendationIAService
         $inStockRecommendations = $this->buildLocalRecommendations($contextualQuery, $requestedLimit, true);
         $similarWithoutStock = $this->buildLocalRecommendations($contextualQuery, min(3, $requestedLimit), false);
 
-        if (empty($inStockRecommendations) && !empty($similarWithoutStock)) {
-            return $this->finalizeResponse($resolvedConversationId, $conversationState, [
-                'type' => 'local_similar_no_stock',
-                'message' => $this->buildNoStockAlternativeMessage($similarWithoutStock, $query),
-                'products' => $similarWithoutStock,
-            ]);
-        }
-
-        $localRecommendations = $inStockRecommendations;
-
-        if (empty($localRecommendations)) {
-            return $this->finalizeResponse($resolvedConversationId, $conversationState, [
-                'type' => 'local_no_match',
-                'message' => $this->buildLocalMessage([], $query),
-                'products' => [],
-            ]);
-        }
-
-        $compatibilityQuestion = $this->buildCompatibilityQuestion($queryLower, $queryTokens, $conversationState);
-        if ($compatibilityQuestion) {
-            return $this->finalizeResponse($resolvedConversationId, $conversationState, [
-                'type' => 'local_consultative',
-                'message' => $this->buildConsultativeMessage($localRecommendations, $query, $compatibilityQuestion),
-                'products' => $localRecommendations,
-            ]);
-        }
+        $localRecommendations = ! empty($inStockRecommendations)
+            ? $inStockRecommendations
+            : $similarWithoutStock;
 
         try {
             if ($this->openAiKey) {
@@ -91,20 +71,17 @@ class RecommendationIAService
                         'Authorization' => "Bearer {$this->openAiKey}",
                         'Content-Type' => 'application/json',
                     ])
-                    ->post("{$this->openAiBaseUrl}/chat/completions", [
+                    ->post("{$this->openAiBaseUrl}/responses", [
                         'model' => $this->openAiModel,
-                        'messages' => [
-                            [
-                                'role' => 'system',
-                                'content' => 'Eres un asesor comercial de FERREBOM especializado en pernos, tuercas, arandelas y maquinaria pesada. Responde en espanol y SOLO puedes recomendar productos listados en el catalogo entregado. No inventes productos ni especificaciones.',
-                            ],
+                        'instructions' => $this->buildOpenAiInstructions(),
+                        'input' => [
                             [
                                 'role' => 'user',
                                 'content' => $this->buildOpenAiPrompt($contextualQuery, $localRecommendations),
                             ],
                         ],
-                        'temperature' => 0.7,
-                        'max_tokens' => 500,
+                        'max_output_tokens' => 700,
+                        'store' => false,
                     ]);
 
                 if ($response->failed()) {
@@ -117,7 +94,7 @@ class RecommendationIAService
                 }
 
                 $responseData = $response->json();
-                $message = data_get($responseData, 'choices.0.message.content', 'No se recibió respuesta de OpenAI.');
+                $message = $this->extractOpenAiText($responseData);
 
                 return $this->finalizeResponse($resolvedConversationId, $conversationState, [
                     'type' => 'openai',
@@ -136,7 +113,7 @@ class RecommendationIAService
                 if ($response->failed()) {
                     Log::error('AI API Error', [
                         'status' => $response->status(),
-                        'body' => $response->body()
+                        'body' => $response->body(),
                     ]);
 
                     throw new Exception('Error al comunicarse con el sistema de IA');
@@ -159,7 +136,7 @@ class RecommendationIAService
         } catch (Exception $e) {
             Log::error('AI Recommendation Error', [
                 'message' => $e->getMessage(),
-                'query' => $query
+                'query' => $query,
             ]);
 
             return $this->finalizeResponse($resolvedConversationId, $conversationState, [
@@ -204,6 +181,7 @@ class RecommendationIAService
                     $score += 3.0;
                     $relevanceSignals++;
                     $reasons[] = "coincide en nombre ({$token})";
+
                     continue;
                 }
 
@@ -211,6 +189,7 @@ class RecommendationIAService
                     $score += 2.5;
                     $relevanceSignals++;
                     $reasons[] = "coincide en marca/modelo ({$token})";
+
                     continue;
                 }
 
@@ -218,6 +197,7 @@ class RecommendationIAService
                     $score += 2.0;
                     $relevanceSignals++;
                     $reasons[] = "coincide en categoria ({$token})";
+
                     continue;
                 }
 
@@ -258,7 +238,7 @@ class RecommendationIAService
             }
 
             if ($isUpgradeIntent) {
-                $performanceScore = $this->estimatePerformanceScore($specText . ' ' . $featuresText);
+                $performanceScore = $this->estimatePerformanceScore($specText.' '.$featuresText);
                 if ($performanceScore > 0) {
                     $score += $performanceScore;
                     $reasons[] = 'tiene especificaciones de mayor rendimiento';
@@ -339,7 +319,7 @@ class RecommendationIAService
         $stopWords = [
             'de', 'del', 'la', 'el', 'los', 'las', 'un', 'una', 'unos', 'unas',
             'para', 'por', 'con', 'sin', 'que', 'quiero', 'necesito', 'busco',
-            'me', 'mi', 'y', 'o', 'en', 'es', 'al', 'a'
+            'me', 'mi', 'y', 'o', 'en', 'es', 'al', 'a',
         ];
 
         return collect($rawTokens)
@@ -380,7 +360,7 @@ class RecommendationIAService
     {
         return $this->hasAnyKeyword($query, [
             'mas resistente', 'más resistente', 'mayor resistencia', 'grado superior', 'mas fuerte', 'más fuerte',
-            'alto torque', 'trabajo pesado', 'maquinaria pesada', 'industrial'
+            'alto torque', 'trabajo pesado', 'maquinaria pesada', 'industrial',
         ]);
     }
 
@@ -486,7 +466,7 @@ class RecommendationIAService
             return 'Producto sugerido por disponibilidad en catalogo';
         }
 
-        return 'Te lo sugiero porque ' . implode(', ', array_slice(array_unique($reasons), 0, 2)) . '.';
+        return 'Te lo sugiero porque '.implode(', ', array_slice(array_unique($reasons), 0, 2)).'.';
     }
 
     protected function buildLocalMessage(array $products, string $query): string
@@ -497,12 +477,12 @@ class RecommendationIAService
 
         $first = $products[0];
         $price = collect($first['variants'] ?? [])->min('price');
-        $priceText = is_numeric($price) ? ' desde S/ ' . number_format((float) $price, 2) : '';
+        $priceText = is_numeric($price) ? ' desde S/ '.number_format((float) $price, 2) : '';
 
         $topSpecs = collect($first['specifications'] ?? [])
             ->filter(fn ($spec) => filled($spec['name'] ?? null) && filled($spec['value'] ?? null))
             ->take(2)
-            ->map(fn ($spec) => ($spec['name'] ?? '') . ': ' . ($spec['value'] ?? ''))
+            ->map(fn ($spec) => ($spec['name'] ?? '').': '.($spec['value'] ?? ''))
             ->implode(' | ');
 
         $specText = $topSpecs ? " Especificaciones clave: {$topSpecs}." : '';
@@ -520,7 +500,7 @@ class RecommendationIAService
     {
         $first = $products[0] ?? null;
 
-        if (!$first) {
+        if (! $first) {
             return 'Por el momento no contamos con ese producto en stock, pero puedes mirar nuestros productos por si te animas por algo mas.';
         }
 
@@ -543,23 +523,23 @@ class RecommendationIAService
         }
 
         $hasFastenerIntent = $this->hasAnyKeyword($queryLower, [
-            'perno', 'pernos', 'tuerca', 'tuercas', 'arandela', 'arandelas', 'bulon', 'espárrago', 'esparrago'
+            'perno', 'pernos', 'tuerca', 'tuercas', 'arandela', 'arandelas', 'bulon', 'espárrago', 'esparrago',
         ]) || count(array_intersect($tokens, ['perno', 'pernos', 'tuerca', 'tuercas', 'arandela', 'arandelas'])) > 0;
 
         if ($hasFastenerIntent) {
             $hasTechnicalData = $this->hasAnyKeyword($queryLower, [
                 'm6', 'm8', 'm10', 'm12', 'm16', 'mm', 'pulg', 'rosca', 'paso', 'grado', 'material', 'inoxidable', 'galvanizado',
-                'din', 'iso', 'sae', 'ansi', 'astm', '8.8', '10.9', '12.9'
+                'din', 'iso', 'sae', 'ansi', 'astm', '8.8', '10.9', '12.9',
             ]);
 
-            if (!$hasTechnicalData) {
+            if (! $hasTechnicalData) {
                 return 'Para recomendarte el perno o tuerca correcto, confirmame medida (ej. M10x50), tipo de rosca, grado de resistencia, material y norma (DIN/ISO/SAE si aplica).';
             }
         }
 
         if ($this->hasAnyKeyword($queryLower, ['maquinaria', 'pesada', 'excavadora', 'retroexcavadora', 'tractor'])) {
             $hasMachineData = $this->hasAnyKeyword($queryLower, ['modelo', 'marca', 'aplicacion', 'aplicación', 'torque', 'grado', 'din', 'iso', 'sae']);
-            if (!$hasMachineData) {
+            if (! $hasMachineData) {
                 return 'Para maquinaria pesada, dime marca/modelo del equipo, aplicacion del perno (chasis, balde, brazo, etc.), grado y norma tecnica requerida.';
             }
         }
@@ -571,7 +551,7 @@ class RecommendationIAService
     {
         $baseMessage = $this->buildLocalMessage($products, $query);
 
-        return $baseMessage . ' ' . $compatibilityQuestion;
+        return $baseMessage.' '.$compatibilityQuestion;
     }
 
     protected function buildOpenAiPrompt(string $query, array $products): string
@@ -579,7 +559,7 @@ class RecommendationIAService
         $catalogSummary = collect($products)
             ->map(function ($product) {
                 $price = collect($product['variants'] ?? [])->min('price');
-                $priceText = is_numeric($price) ? 'S/ ' . number_format((float) $price, 2) : 'precio no disponible';
+                $priceText = is_numeric($price) ? 'S/ '.number_format((float) $price, 2) : 'precio no disponible';
 
                 return sprintf(
                     '- %s (%s) %s, %s. %s',
@@ -592,15 +572,45 @@ class RecommendationIAService
             })
             ->implode("\n");
 
-        return "Consulta del cliente: {$query}\n" .
-            "Productos recomendados desde base de datos:\n{$catalogSummary}\n" .
-                'Responde con recomendacion breve, clara y tecnica orientada al rubro de pernos, tuercas, arandelas y maquinaria pesada. Prioriza compatibilidad (medida, rosca, grado, material, aplicacion). Usa unicamente productos del listado y no inventes datos.';
+        $catalogText = $catalogSummary !== ''
+            ? $catalogSummary
+            : 'No se encontraron coincidencias verificadas en el catálogo para esta consulta.';
+
+        return "Consulta del cliente: {$query}\n\n".
+            "Coincidencias verificadas del catálogo:\n{$catalogText}\n\n".
+            'Responde la consulta técnica usando tu conocimiento profesional. Si recomiendas una compra concreta, solo presenta como disponible un producto incluido en las coincidencias del catálogo.';
+    }
+
+    protected function buildOpenAiInstructions(): string
+    {
+        return <<<'PROMPT'
+Eres el asesor técnico de EL MUNDO DEL PERNO, una tienda peruana especializada en elementos de fijación.
+
+Dominas pernos, tornillos, tuercas, arandelas, espárragos, anclajes, roscas métricas y en pulgadas, normas DIN/ISO/SAE/ASTM, grados 5/8 y clases 8.8/10.9/12.9, torque, recubrimientos, corrosión y selección de fijaciones para automóviles, camiones, construcción, industria y maquinaria pesada.
+
+Responde siempre en español claro y profesional. Primero entiende la aplicación; cuando falten datos críticos, pregunta por medida, paso de rosca, longitud, grado/clase, material, equipo, zona de montaje, carga y condiciones de trabajo. Explica riesgos de incompatibilidad y nunca inventes torque, compatibilidad OEM, stock, precio ni certificaciones. En asuntos críticos de seguridad, indica que se valide el manual del fabricante o con un técnico calificado.
+
+Puedes enseñar y orientar con conocimiento general. Solo afirma que un artículo está disponible o recomienda una compra específica cuando aparezca en las coincidencias verificadas del catálogo suministrado. Mantén la respuesta útil y breve, normalmente entre 2 y 6 párrafos o una lista corta.
+PROMPT;
+    }
+
+    protected function extractOpenAiText(array $responseData): string
+    {
+        foreach ($responseData['output'] ?? [] as $output) {
+            foreach ($output['content'] ?? [] as $content) {
+                if (($content['type'] ?? null) === 'output_text' && ! empty($content['text'])) {
+                    return trim((string) $content['text']);
+                }
+            }
+        }
+
+        return 'No pude generar una respuesta técnica en este momento. Intenta reformular tu consulta.';
     }
 
     protected function isMostExpensiveIntent(string $queryLower): bool
     {
         return $this->hasAnyKeyword($queryLower, [
-            'mas caro', 'más caro', 'mayor precio', 'precio mas alto', 'precio más alto', 'el mas caro', 'el más caro'
+            'mas caro', 'más caro', 'mayor precio', 'precio mas alto', 'precio más alto', 'el mas caro', 'el más caro',
         ]);
     }
 
@@ -608,7 +618,7 @@ class RecommendationIAService
     {
         return $this->hasAnyKeyword($queryLower, [
             'mas barato', 'más barato', 'menor precio', 'precio mas bajo', 'precio más bajo', 'el mas barato', 'el más barato',
-            'economico', 'económico'
+            'economico', 'económico',
         ]);
     }
 
@@ -726,18 +736,30 @@ class RecommendationIAService
     {
         $fragments = [];
 
-        if (!empty($state['product_type'])) $fragments[] = 'producto ' . $state['product_type'];
-        if (!empty($state['measure'])) $fragments[] = 'medida ' . $state['measure'];
-        if (!empty($state['grade'])) $fragments[] = 'grado ' . $state['grade'];
-        if (!empty($state['application'])) $fragments[] = 'aplicacion ' . $state['application'];
-        if (!empty($state['equipment'])) $fragments[] = 'equipo ' . $state['equipment'];
-        if (!empty($state['budget'])) $fragments[] = 'presupuesto S/' . $state['budget'];
+        if (! empty($state['product_type'])) {
+            $fragments[] = 'producto '.$state['product_type'];
+        }
+        if (! empty($state['measure'])) {
+            $fragments[] = 'medida '.$state['measure'];
+        }
+        if (! empty($state['grade'])) {
+            $fragments[] = 'grado '.$state['grade'];
+        }
+        if (! empty($state['application'])) {
+            $fragments[] = 'aplicacion '.$state['application'];
+        }
+        if (! empty($state['equipment'])) {
+            $fragments[] = 'equipo '.$state['equipment'];
+        }
+        if (! empty($state['budget'])) {
+            $fragments[] = 'presupuesto S/'.$state['budget'];
+        }
 
         if (empty($fragments)) {
             return $query;
         }
 
-        return trim($query . ' ' . implode(' ', $fragments));
+        return trim($query.' '.implode(' ', $fragments));
     }
 
     protected function buildPendingQuestionFromState(array $state): ?string
@@ -758,12 +780,12 @@ class RecommendationIAService
             }
         }
 
-        if (!empty($missing)) {
+        if (! empty($missing)) {
             if (count($missing) === 1) {
-                return 'Solo necesito confirmar un dato adicional: ' . $missing[0] . '.';
+                return 'Solo necesito confirmar un dato adicional: '.$missing[0].'.';
             }
 
-            return 'Ya tengo parte de la informacion. Para continuar solo faltan estos datos: ' . implode(', ', $missing) . '.';
+            return 'Ya tengo parte de la informacion. Para continuar solo faltan estos datos: '.implode(', ', $missing).'.';
         }
 
         $optionalMissing = [];
@@ -774,8 +796,8 @@ class RecommendationIAService
             $optionalMissing[] = 'cantidad de unidades';
         }
 
-        if (!empty($optionalMissing)) {
-            return 'Perfecto, gracias. Ya tengo producto, medida, grado, equipo, aplicacion y presupuesto. Solo necesito: ' . implode(' y ', $optionalMissing) . '.';
+        if (! empty($optionalMissing)) {
+            return 'Perfecto, gracias. Ya tengo producto, medida, grado, equipo, aplicacion y presupuesto. Solo necesito: '.implode(' y ', $optionalMissing).'.';
         }
 
         return null;
@@ -783,11 +805,22 @@ class RecommendationIAService
 
     protected function extractProductType(string $queryLower): ?string
     {
-        if ($this->hasAnyKeyword($queryLower, ['perno', 'pernos'])) return 'perno';
-        if ($this->hasAnyKeyword($queryLower, ['tuerca', 'tuercas'])) return 'tuerca';
-        if ($this->hasAnyKeyword($queryLower, ['arandela', 'arandelas'])) return 'arandela';
-        if ($this->hasAnyKeyword($queryLower, ['anclaje', 'anclajes'])) return 'anclaje';
-        if ($this->hasAnyKeyword($queryLower, ['bulon', 'bulones', 'bulón'])) return 'bulon';
+        if ($this->hasAnyKeyword($queryLower, ['perno', 'pernos'])) {
+            return 'perno';
+        }
+        if ($this->hasAnyKeyword($queryLower, ['tuerca', 'tuercas'])) {
+            return 'tuerca';
+        }
+        if ($this->hasAnyKeyword($queryLower, ['arandela', 'arandelas'])) {
+            return 'arandela';
+        }
+        if ($this->hasAnyKeyword($queryLower, ['anclaje', 'anclajes'])) {
+            return 'anclaje';
+        }
+        if ($this->hasAnyKeyword($queryLower, ['bulon', 'bulones', 'bulón'])) {
+            return 'bulon';
+        }
+
         return null;
     }
 
@@ -854,9 +887,16 @@ class RecommendationIAService
 
     protected function extractHeadType(string $queryLower): ?string
     {
-        if ($this->hasAnyKeyword($queryLower, ['hexagonal', 'hex'])) return 'hexagonal';
-        if ($this->hasAnyKeyword($queryLower, ['allen'])) return 'allen';
-        if ($this->hasAnyKeyword($queryLower, ['torx'])) return 'torx';
+        if ($this->hasAnyKeyword($queryLower, ['hexagonal', 'hex'])) {
+            return 'hexagonal';
+        }
+        if ($this->hasAnyKeyword($queryLower, ['allen'])) {
+            return 'allen';
+        }
+        if ($this->hasAnyKeyword($queryLower, ['torx'])) {
+            return 'torx';
+        }
+
         return null;
     }
 
@@ -941,6 +981,7 @@ class RecommendationIAService
 
         if (preg_match('/(\d+)\s+(sugerencia|sugerencias|producto|productos)/u', $queryLower, $matches)) {
             $requested = (int) ($matches[1] ?? 4);
+
             return max(1, min(6, $requested));
         }
 
@@ -954,7 +995,7 @@ class RecommendationIAService
      */
     public function syncCatalog(): array
     {
-        if (!$this->aiApiUrl) {
+        if (! $this->aiApiUrl) {
             throw new Exception('IA_API_URL no está configurado para sincronizar catálogo externo.');
         }
 
@@ -966,17 +1007,17 @@ class RecommendationIAService
             $productsData = ProductIaResource::collection($products)->resolve();
 
             Log::info('Sincronizando catálogo con IA', [
-                'total_products' => count($productsData)
+                'total_products' => count($productsData),
             ]);
 
             // 3. Enviar a Python
             $response = Http::timeout(240) // 2 minutos para catálogos grandes
                 ->post("{$this->aiApiUrl}/sync-catalog", [
-                    'products' => $productsData
+                    'products' => $productsData,
                 ]);
 
             if ($response->failed()) {
-                throw new Exception('Error al sincronizar catálogo: ' . $response->body());
+                throw new Exception('Error al sincronizar catálogo: '.$response->body());
             }
 
             $result = $response->json();
@@ -986,7 +1027,7 @@ class RecommendationIAService
             return $result;
         } catch (Exception $e) {
             Log::error('Catalog Sync Error', [
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ]);
 
             throw $e;
@@ -1007,7 +1048,7 @@ class RecommendationIAService
         } catch (Exception $e) {
             Log::error('Product Sync Error', [
                 'product_id' => $productId,
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ]);
 
             // No lanzamos excepción para no bloquear la creación/edición del producto

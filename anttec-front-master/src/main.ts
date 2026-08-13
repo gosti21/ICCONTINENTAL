@@ -75,6 +75,8 @@ import {
   faDolly,
   faFileExport,
   faTriangleExclamation,
+  faEnvelope,
+  faScrewdriverWrench,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 library.add(
@@ -143,10 +145,12 @@ library.add(
   faDolly,
   faFileExport,
   faTriangleExclamation,
+  faEnvelope,
+  faScrewdriverWrench,
 )
 
-import { faFacebookF, faInstagram, faBilibili } from '@fortawesome/free-brands-svg-icons'
-library.add(faFacebookF, faInstagram, faBilibili)
+import { faFacebookF, faInstagram, faBilibili, faWhatsapp } from '@fortawesome/free-brands-svg-icons'
+library.add(faFacebookF, faInstagram, faBilibili, faWhatsapp)
 
 const app = createApp(App)
 

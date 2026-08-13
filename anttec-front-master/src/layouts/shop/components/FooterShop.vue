@@ -32,8 +32,8 @@
             </a>
 
             <p class="text-sm font-medium mt-4 mb-1">Correo</p>
-            <a href="mailto:ferrebomshop@gmail.com" class="block text-sm hover:text-white transition">
-              ferrebomshop@gmail.com
+            <a href="mailto:elmundodelperno@gmail.com" class="block text-sm hover:text-white transition">
+              elmundodelperno@gmail.com
             </a>
 
             <p class="text-sm font-medium mt-4 mb-1">Horario</p>
@@ -98,7 +98,7 @@
 
       <!-- BOTTOM -->
       <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <span class="text-sm"> FERREBOM © 2026. Todos los derechos reservados </span>
+        <span class="text-sm"> EL MUNDO DEL PERNO © 2026. Todos los derechos reservados </span>
 
         <div class="flex gap-5">
           <a

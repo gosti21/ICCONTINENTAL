@@ -1,269 +1,151 @@
 <script setup lang="ts">
-import { useChatStore } from '@/stores/useChatStore'
 import { nextTick, ref, watch } from 'vue'
+import { useChatStore } from '@/stores/useChatStore'
 import ChatMessage from './ChatMessage.vue'
 import ChatProductCard from './ChatProductCard.vue'
-import { useSweetAlert } from '@/composables/useSweetAlert'
 
 const chatStore = useChatStore()
 const inputMessage = ref('')
 const messagesContainer = ref<HTMLElement | null>(null)
 
-async function handleSend() {
-  if (!inputMessage.value.trim()) return
+const suggestions = [
+  '¿Qué perno necesito para maquinaria pesada?',
+  'Diferencia entre grado 8.8 y 10.9',
+  'Busco una tuerca para uso automotriz',
+]
 
-  const message = inputMessage.value
+async function send(message = inputMessage.value) {
+  const cleanMessage = message.trim()
+  if (!cleanMessage) return
   inputMessage.value = ''
-
-  await chatStore.sendMessage(message)
-
-  // Scroll al final después de agregar mensaje
-  nextTick(() => {
-    scrollToBottom()
-  })
-}
-
-async function handleReset() {
-  // Confirmación con SweetAlert
-  const result = await useSweetAlert({
-    title: '¿Nueva conversación?',
-    text: 'Se perderá el historial actual. ¿Deseas continuar?',
-    icon: 'warning',
-    timer: 0,
-    timerProgressBar: false,
-    showCancelButton: true,
-    confirmButtonText: 'Sí, reiniciar',
-    cancelButtonText: 'Cancelar',
-    confirmButtonColor: '#3b82f6',
-    cancelButtonColor: '#6b7280'
-  })
-
-  if (result?.isConfirmed) {
-    chatStore.resetConversation()
-    chatStore.initChat()
-
-    // Notificación de éxito
-    useSweetAlert({
-      title: 'Conversación reiniciada',
-      text: 'Puedes empezar una nueva consulta',
-      icon: 'success',
-      timer: 2000,
-      showConfirmButton: false
-    })
-  }
+  await chatStore.sendMessage(cleanMessage)
 }
 
 function scrollToBottom() {
-  if (messagesContainer.value) {
-    messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
-  }
+  nextTick(() => {
+    if (messagesContainer.value) {
+      messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+    }
+  })
 }
 
-// Auto-scroll cuando llegan nuevos mensajes
-watch(
-  () => chatStore.messages.length,
-  () => {
-    nextTick(() => {
-      scrollToBottom()
-    })
-  },
-)
+watch(() => [chatStore.messages.length, chatStore.isLoading], scrollToBottom)
 </script>
 
 <template>
-  <!-- Overlay -->
-  <Transition name="fade">
-    <div
+  <Transition name="chat-fade">
+    <button
       v-if="chatStore.isOpen"
-      class="fixed inset-0 backdrop-blur-sm z-40"
+      class="fixed inset-0 z-40 bg-slate-950/25 backdrop-blur-[2px]"
+      aria-label="Cerrar asistente"
       @click="chatStore.closeChat"
-    ></div>
+    />
   </Transition>
 
-  <!-- Chat Window -->
-  <Transition name="slide">
-    <div
+  <Transition name="chat-slide">
+    <section
       v-if="chatStore.isOpen"
-      class="fixed bottom-0 right-0 sm:bottom-6 sm:right-6 w-full sm:w-100 h-120 sm:h-160] bg-white sm:rounded-2xl shadow-2xl z-50 flex flex-col overflow-hidden"
+      class="fixed inset-x-0 bottom-0 z-50 flex h-[85dvh] flex-col overflow-hidden bg-white shadow-2xl sm:inset-auto sm:bottom-6 sm:right-6 sm:h-[680px] sm:max-h-[calc(100vh-3rem)] sm:w-[420px] sm:rounded-3xl"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Asesor técnico de El Mundo del Perno"
     >
-      <!-- Header -->
-      <div
-        class="bg-linear-to-r from-blue-500 via-purple-500 to-pink-500 text-white px-6 py-4 flex items-center justify-between"
-      >
-        <div class="flex items-center">
-          <div
-            class="w-10 h-10 rounded-full bg-white bg-opacity-20 backdrop-blur-sm flex items-center justify-center mr-3"
-          >
-            <font-awesome-icon icon="fa-brands fa-bilibili" size="xl" class="text-dark" />
+      <header class="flex items-center justify-between bg-gradient-to-r from-orange-600 to-orange-500 px-5 py-4 text-white">
+        <div class="flex min-w-0 items-center gap-3">
+          <div class="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-white/20 ring-1 ring-white/30">
+            <font-awesome-icon icon="fa-solid fa-screwdriver-wrench" class="text-xl" />
           </div>
-          <div>
-            <h3 class="font-semibold text-lg">Asistente IA</h3>
-            <p class="text-xs text-white text-opacity-90">Siempre disponible para ayudarte</p>
+          <div class="min-w-0">
+            <h2 class="truncate font-bold">Asesor técnico</h2>
+            <p class="flex items-center gap-1.5 text-xs text-orange-50">
+              <span class="h-2 w-2 rounded-full bg-emerald-300" />
+              Pernos, automotriz y maquinaria pesada
+            </p>
           </div>
         </div>
-
-        <div class="flex items-center gap-2">
-          <!-- Botón nueva conversación -->
-          <button
-            @click="handleReset"
-            class="w-9 h-9 rounded-full bg-white bg-opacity-20 hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center cursor-pointer"
-            title="Nueva conversación"
-          >
-            <font-awesome-icon icon="fa-solid fa-arrow-rotate-left" size="xl" class="text-dark" />
+        <div class="flex gap-1">
+          <button class="chat-icon-button" title="Nueva conversación" @click="chatStore.resetConversation">
+            <font-awesome-icon icon="fa-solid fa-arrow-rotate-left" />
           </button>
-
-          <!-- Botón cerrar -->
-          <button
-            @click="chatStore.closeChat"
-            class="w-9 h-9 rounded-full bg-white bg-opacity-20 hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center cursor-pointer"
-            title="Cerrar chat"
-          >
-            <font-awesome-icon icon="fa-solid fa-xmark" size="xl" class="text-red-500" />
+          <button class="chat-icon-button" title="Cerrar" @click="chatStore.closeChat">
+            <font-awesome-icon icon="fa-solid fa-xmark" />
           </button>
         </div>
-      </div>
+      </header>
 
-      <!-- Mensajes -->
-      <div ref="messagesContainer" class="flex-1 overflow-y-auto px-6 py-4 bg-gray-50">
-        <!-- Lista de mensajes -->
-        <div v-for="message in chatStore.messages" :key="message.id">
-          <!-- Mensaje de texto -->
-          <ChatMessage :message="message" />
+      <div ref="messagesContainer" class="flex-1 overflow-y-auto bg-orange-50/40 px-4 py-5">
+        <ChatMessage v-for="message in chatStore.messages" :key="message.id" :message="message" />
 
-          <!-- Productos (si los hay) -->
-          <div v-if="message.products && message.products.length > 0" class="mb-4 space-y-3">
-            <ChatProductCard
-              v-for="product in message.products"
-              :key="product.id"
-              :product="product"
-            />
-          </div>
+        <div v-if="chatStore.messages.length === 1" class="mb-5 flex flex-wrap gap-2 pl-11">
+          <button
+            v-for="suggestion in suggestions"
+            :key="suggestion"
+            class="rounded-full border border-orange-200 bg-white px-3 py-2 text-left text-xs font-medium text-orange-800 transition hover:border-orange-400 hover:bg-orange-50"
+            @click="send(suggestion)"
+          >
+            {{ suggestion }}
+          </button>
         </div>
 
-        <!-- Indicador "escribiendo..." -->
-        <div v-if="chatStore.isLoading" class="flex items-center mb-4 animate-fadeIn">
-          <div class="shrink-0 mr-3">
-            <div
-              class="w-8 h-8 rounded-full bg-linear-to-br from-blue-500 to-purple-500 flex items-center justify-center"
-            >
-              <i class="fas fa-robot text-white text-sm"></i>
-            </div>
+        <template v-for="message in chatStore.messages" :key="`${message.id}-products`">
+          <div v-if="message.products?.length" class="mb-5 space-y-3 pl-11">
+            <ChatProductCard v-for="product in message.products" :key="product.id" :product="product" />
           </div>
-          <div class="bg-white rounded-2xl px-4 py-3 shadow-md border border-gray-200">
-            <div class="flex gap-1">
-              <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-              <div
-                class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                style="animation-delay: 0.2s"
-              ></div>
-              <div
-                class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                style="animation-delay: 0.4s"
-              ></div>
-            </div>
+        </template>
+
+        <div v-if="chatStore.isLoading" class="mb-4 flex items-center gap-3 pl-1" aria-live="polite">
+          <div class="grid h-8 w-8 place-items-center rounded-xl bg-orange-100 text-orange-700">
+            <font-awesome-icon icon="fa-solid fa-screwdriver-wrench" />
+          </div>
+          <div class="flex gap-1 rounded-2xl border border-orange-100 bg-white px-4 py-3 shadow-sm">
+            <span v-for="dot in 3" :key="dot" class="typing-dot h-2 w-2 rounded-full bg-orange-400" :style="{ animationDelay: `${dot * 120}ms` }" />
           </div>
         </div>
       </div>
 
-      <!-- Input -->
-      <div class="border-t border-gray-200 p-4 bg-white">
-        <form @submit.prevent="handleSend" class="flex items-center gap-2">
-          <input
+      <footer class="border-t border-orange-100 bg-white p-4">
+        <form class="flex items-end gap-2" @submit.prevent="send()">
+          <label class="sr-only" for="technical-chat-input">Escribe tu consulta técnica</label>
+          <textarea
+            id="technical-chat-input"
             v-model="inputMessage"
-            type="text"
-            placeholder="Escribe tu mensaje..."
-            class="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            rows="1"
+            maxlength="500"
+            placeholder="Ej.: necesito pernos M16 para una excavadora..."
+            class="max-h-28 min-h-12 flex-1 resize-none rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-orange-500 focus:ring-2 focus:ring-orange-200"
             :disabled="chatStore.isLoading"
+            @keydown.enter.exact.prevent="send()"
           />
           <button
             type="submit"
+            class="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-orange-600 text-white shadow-lg shadow-orange-600/20 transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-40"
             :disabled="!inputMessage.trim() || chatStore.isLoading"
-            class="w-12 h-12 bg-linear-to-r from-blue-500 to-purple-500 text-white rounded-xl hover:from-blue-600 hover:to-purple-600 transition-all duration-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 active:scale-95 cursor-pointer"
+            aria-label="Enviar mensaje"
           >
-            <font-awesome-icon icon="fa-solid fa-paper-plane" size="xl" class="text-white" />
+            <font-awesome-icon icon="fa-solid fa-paper-plane" />
           </button>
         </form>
-      </div>
-    </div>
+        <p class="mt-2 text-center text-[11px] text-slate-400">Verifica medidas, norma y torque con un técnico antes de instalar.</p>
+      </footer>
+    </section>
   </Transition>
 </template>
 
 <style scoped>
-/* Transiciones */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s ease;
+.chat-icon-button {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  color: white;
+  border-radius: 0.75rem;
+  transition: background-color 0.2s ease;
 }
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
-.slide-enter-active {
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.slide-leave-active {
-  transition: all 0.2s ease-in;
-}
-
-.slide-enter-from {
-  transform: translateY(100%);
-  opacity: 0;
-}
-
-.slide-leave-to {
-  transform: translateY(100%);
-  opacity: 0;
-}
-
-/* Animaciones */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fadeIn {
-  animation: fadeIn 0.3s ease-out;
-}
-
-@keyframes bounce {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-5px);
-  }
-}
-
-.animate-bounce {
-  animation: bounce 1s infinite;
-}
-
-/* Scrollbar personalizado */
-.overflow-y-auto::-webkit-scrollbar {
-  width: 6px;
-}
-
-.overflow-y-auto::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 10px;
-}
-
-.overflow-y-auto::-webkit-scrollbar-thumb {
-  background: #cbd5e0;
-  border-radius: 10px;
-}
-
-.overflow-y-auto::-webkit-scrollbar-thumb:hover {
-  background: #a0aec0;
-}
+.chat-icon-button:hover { background: rgb(255 255 255 / 20%); }
+.chat-fade-enter-active, .chat-fade-leave-active { transition: opacity .2s ease; }
+.chat-fade-enter-from, .chat-fade-leave-to { opacity: 0; }
+.chat-slide-enter-active, .chat-slide-leave-active { transition: transform .25s ease, opacity .2s ease; }
+.chat-slide-enter-from, .chat-slide-leave-to { transform: translateY(24px); opacity: 0; }
+.typing-dot { animation: typing 1s ease-in-out infinite; }
+@keyframes typing { 0%, 100% { transform: translateY(0); opacity: .35; } 50% { transform: translateY(-4px); opacity: 1; } }
 </style>

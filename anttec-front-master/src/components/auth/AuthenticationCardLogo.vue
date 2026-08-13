@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// LOGOS: reemplazar en src/assets/img/; consulta src/assets/img/README.md.
 import logo from '@/assets/img/logo.png'
 import logoDark from '@/assets/img/logo-dark.png'
 </script>

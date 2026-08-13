@@ -15,7 +15,7 @@ services:
         value: https://iccontinental-lico.onrender.com
       - key: APP_URL_FRONT
         value: https://iccontinental-1-m0s1.onrender.com
-      - key: APISNET_TOKEN
+      - key: APISPERU_LOOKUP_TOKEN
         sync: false
       - key: PORT
         value: 10000

@@ -20,11 +20,11 @@ function formatTime(date: Date): string {
     :class="message.type === 'user' ? 'justify-end' : 'justify-start'"
   >
     <!-- Avatar IA -->
-    <div v-if="message.type === 'ai'" class="shrink-0 mr-4">
+    <div v-if="message.type === 'ai'" class="mr-3 shrink-0">
       <div
-        class="w-8 h-8 rounded-full bg-lienar-to-br from-blue-500 to-purple-500 flex items-center justify-center"
+        class="flex h-8 w-8 items-center justify-center rounded-xl bg-orange-100 text-orange-700"
       >
-        <font-awesome-icon icon="fa-brands fa-bilibili" size="2xl" class="text-dark" />
+        <font-awesome-icon icon="fa-solid fa-screwdriver-wrench" />
       </div>
     </div>
 
@@ -33,8 +33,8 @@ function formatTime(date: Date): string {
       class="max-w-[75%] rounded-2xl px-4 py-3 shadow-md"
       :class="
         message.type === 'user'
-          ? 'bg-linear-to-br from-blue-500 to-blue-600 text-white rounded-br-sm'
-          : 'bg-white text-gray-800 rounded-bl-sm border border-gray-200'
+          ? 'bg-orange-600 text-white rounded-br-sm shadow-orange-600/10'
+          : 'bg-white text-slate-800 rounded-bl-sm border border-orange-100'
       "
     >
       <!-- Contenido del mensaje -->
@@ -45,7 +45,7 @@ function formatTime(date: Date): string {
       <!-- Timestamp -->
       <p
         class="text-xs mt-2 opacity-70"
-        :class="message.type === 'user' ? 'text-blue-100' : 'text-gray-500'"
+        :class="message.type === 'user' ? 'text-orange-100' : 'text-slate-400'"
       >
         {{ formatTime(message.timestamp) }}
       </p>

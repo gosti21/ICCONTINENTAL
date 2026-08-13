@@ -10,23 +10,23 @@ class SearchRUCService
 {
     public function searchRUC(string $ruc): ?array
     {
-        if (! filled(config('integrations.apisnet.token'))) {
-            Log::warning('Consulta RUC no configurada: falta APISNET_TOKEN');
+        if (! filled(config('integrations.apisperu_lookup.token'))) {
+            Log::warning('Consulta RUC no configurada: falta APISPERU_LOOKUP_TOKEN');
 
             return null;
         }
 
         try {
-            $response = Http::baseUrl(rtrim((string) config('integrations.apisnet.base_url'), '/'))
-                ->withToken((string) config('integrations.apisnet.token'))
+            $response = Http::baseUrl(rtrim((string) config('integrations.apisperu_lookup.base_url'), '/'))
+                ->withToken((string) config('integrations.apisperu_lookup.token'))
                 ->acceptJson()
-                ->withHeaders(['Referer' => 'https://apis.net.pe/api-consulta-ruc'])
+                ->asJson()
                 ->connectTimeout(8)
                 ->timeout(15)
-                ->get('sunat/ruc', ['numero' => $ruc]);
+                ->post('ruc', ['ruc' => $ruc]);
 
             if (! $response->successful()) {
-                Log::warning('APIS.NET rechazo la consulta RUC', [
+                Log::warning('APIsPerú rechazó la consulta RUC', [
                     'ruc' => $ruc,
                     'status' => $response->status(),
                     'message' => $response->json('message'),
@@ -40,17 +40,36 @@ class SearchRUCService
                 return null;
             }
 
+            if (($responseData['success'] ?? false) !== true || ! is_array($responseData['data'] ?? null)) {
+                Log::warning('APIsPerú no encontró datos para el RUC', [
+                    'ruc' => $ruc,
+                    'message' => $responseData['message'] ?? null,
+                ]);
+
+                return null;
+            }
+
+            $payload = $responseData['data'];
+            $businessName = trim((string) ($payload['nombre_o_razon_social'] ?? $payload['razon_social'] ?? ''));
+            $taxAddress = trim((string) ($payload['direccion_completa'] ?? $payload['direccion'] ?? ''));
+
+            if ($businessName === '') {
+                Log::warning('APIsPerú respondió sin razón social', ['ruc' => $ruc]);
+
+                return null;
+            }
+
             return [
-                'business_name' => $responseData['razonSocial'] ?? $responseData['nombre'] ?? null,
-                'tax_address' => $responseData['direccion'] ?? null,
-                'document_number' => $responseData['numeroDocumento'] ?? $ruc,
+                'business_name' => $businessName,
+                'tax_address' => $taxAddress,
+                'document_number' => (string) ($payload['ruc'] ?? $ruc),
             ];
         } catch (ConnectionException $e) {
-            Log::error("No se pudo conectar con APIS.NET para consultar RUC {$ruc}: {$e->getMessage()}");
+            Log::error("No se pudo conectar con APIsPerú para consultar RUC {$ruc}: {$e->getMessage()}");
 
             return null;
         } catch (\Throwable $e) {
-            Log::error("APIS.NET error RUC {$ruc}: {$e->getMessage()}");
+            Log::error("APIsPerú error RUC {$ruc}: {$e->getMessage()}");
 
             return null;
         }

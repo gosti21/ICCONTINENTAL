@@ -65,7 +65,7 @@ const buttonClasses = computed(() => {
   const variants = {
     blue: 'from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-blue-500/30',
     green: 'from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-green-500/30',
-    purple: 'from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-purple-500/30',
+    purple: 'from-orange-600 to-pink-600 hover:from-orange-700 hover:to-pink-700 shadow-orange-500/30',
   }
 
   return variants[props.buttonVariant]

@@ -383,9 +383,9 @@ onMounted(() => {
               {{ stats.total_customers }}
             </p>
           </div>
-          <div class="p-3 bg-purple-100 dark:bg-purple-900 rounded-full">
+          <div class="p-3 bg-orange-100 dark:bg-orange-900 rounded-full">
             <svg
-              class="w-8 h-8 text-purple-600 dark:text-purple-300"
+              class="w-8 h-8 text-orange-600 dark:text-orange-300"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"

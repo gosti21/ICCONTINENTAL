@@ -17,7 +17,7 @@ class CustomerSService
     public function getBYCustomerDNI(string $dni)
     {
         $customer = $this->repository->getBYCustomerDNI($dni);
-        if ($customer) {
+        if ($customer && filled($customer->name) && filled($customer->last_name)) {
             return [
                 'status'  => true,
                 'message' => 'Cliente encontrado en base de datos',

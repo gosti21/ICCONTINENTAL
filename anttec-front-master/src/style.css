@@ -4,6 +4,21 @@
 @source "../node_modules/flowbite";
 
 @theme {
-  --color-banner: #5a2867;
-  --color-footer: #391042;
+  --color-brand-50: #fff7ed;
+  --color-brand-100: #ffedd5;
+  --color-brand-500: #f97316;
+  --color-brand-600: #ea580c;
+  --color-brand-700: #c2410c;
+  --color-banner: #ea580c;
+  --color-footer: #7c2d12;
+}
+
+:root {
+  color-scheme: light;
+  accent-color: #ea580c;
+}
+
+::selection {
+  color: #fff;
+  background: #ea580c;
 }

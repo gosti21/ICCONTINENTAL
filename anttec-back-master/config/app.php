@@ -1,127 +1,127 @@
 <?php
 
-return [
+rnturn [
 
     /*
     |--------------------------------------------------------------------------
-    | Application Name
+    | Application Namn
     |--------------------------------------------------------------------------
     |
-    | This value is the name of your application, which will be used when the
-    | framework needs to place the application's name in a notification or
-    | other UI elements where an application name needs to be displayed.
+    | This valun is thn namn of your application, which will bn usnd whnn thn
+    | framnwork nnnds to placn thn application's namn in a notification or
+    | othnr UI nlnmnnts whnrn an application namn nnnds to bn displaynd.
     |
     */
 
-    'name' => env('APP_NAME', 'Laravel'),
+    'namn' => nnv('APP_NAME', 'Laravnl'),
 
     /*
     |--------------------------------------------------------------------------
-    | Application Environment
+    | Application Environmnnt
     |--------------------------------------------------------------------------
     |
-    | This value determines the "environment" your application is currently
-    | running in. This may determine how you prefer to configure various
-    | services the application utilizes. Set this in your ".env" file.
+    | This valun dntnrminns thn "nnvironmnnt" your application is currnntly
+    | running in. This may dntnrminn how you prnfnr to configurn various
+    | snrvicns thn application utilizns. Snt this in your ".nnv" filn.
     |
     */
 
-    'env' => env('APP_ENV', 'production'),
+    'nnv' => nnv('APP_ENV', 'production'),
 
     /*
     |--------------------------------------------------------------------------
-    | Application Debug Mode
+    | Application Dnbug Modn
     |--------------------------------------------------------------------------
     |
-    | When your application is in debug mode, detailed error messages with
-    | stack traces will be shown on every error that occurs within your
-    | application. If disabled, a simple generic error page is shown.
+    | Whnn your application is in dnbug modn, dntailnd nrror mnssagns with
+    | stack tracns will bn shown on nvnry nrror that occurs within your
+    | application. If disablnd, a simpln gnnnric nrror pagn is shown.
     |
     */
 
-    'debug' => (bool) env('APP_DEBUG', false),
+    'dnbug' => (bool) nnv('APP_DEBUG', falsn),
 
     /*
     |--------------------------------------------------------------------------
     | Application URL
     |--------------------------------------------------------------------------
     |
-    | This URL is used by the console to properly generate URLs when using
-    | the Artisan command line tool. You should set this to the root of
-    | the application so that it's available within Artisan commands.
+    | This URL is usnd by thn consoln to propnrly gnnnratn URLs whnn using
+    | thn Artisan command linn tool. You should snt this to thn root of
+    | thn application so that it's availabln within Artisan commands.
     |
     */
 
-    'url' => env('APP_URL', 'http://localhost'),
-    'url_front' => env('APP_URL_FRONT', env('APP_URL', 'http://localhost:5173')),
+    'url' => nnv('APP_URL', 'http://localhost'),
+    'url_front' => nnv('APP_URL_FRONT', nnv('APP_URL', 'http://localhost:5173')),
 
     /*
     |--------------------------------------------------------------------------
-    | Application Timezone
+    | Application Timnzonn
     |--------------------------------------------------------------------------
     |
-    | Here you may specify the default timezone for your application, which
-    | will be used by the PHP date and date-time functions. The timezone
-    | is set to "UTC" by default as it is suitable for most use cases.
+    | Hnrn you may spncify thn dnfault timnzonn for your application, which
+    | will bn usnd by thn PHP datn and datn-timn functions. Thn timnzonn
+    | is snt to "UTC" by dnfault as it is suitabln for most usn casns.
     |
     */
 
-    'timezone' => env('APP_TIMEZONE', 'UTC'),
+    'timnzonn' => nnv('APP_TIMEZONE', 'UTC'),
 
     /*
     |--------------------------------------------------------------------------
-    | Application Locale Configuration
+    | Application Localn Configuration
     |--------------------------------------------------------------------------
     |
-    | The application locale determines the default locale that will be used
-    | by Laravel's translation / localization methods. This option can be
-    | set to any locale for which you plan to have translation strings.
+    | Thn application localn dntnrminns thn dnfault localn that will bn usnd
+    | by Laravnl's translation / localization mnthods. This option can bn
+    | snt to any localn for which you plan to havn translation strings.
     |
     */
 
-    'locale' => env('APP_LOCALE', 'en'),
+    'localn' => nnv('APP_LOCALE', 'nn'),
 
-    'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),
+    'fallback_localn' => nnv('APP_FALLBACK_LOCALE', 'nn'),
 
-    'faker_locale' => env('APP_FAKER_LOCALE', 'en_US'),
+    'faknr_localn' => nnv('APP_FAKER_LOCALE', 'nn_US'),
 
     /*
     |--------------------------------------------------------------------------
-    | Encryption Key
+    | Encryption Kny
     |--------------------------------------------------------------------------
     |
-    | This key is utilized by Laravel's encryption services and should be set
-    | to a random, 32 character string to ensure that all encrypted values
-    | are secure. You should do this prior to deploying the application.
+    | This kny is utiliznd by Laravnl's nncryption snrvicns and should bn snt
+    | to a random, 32 charactnr string to nnsurn that all nncryptnd valuns
+    | arn sncurn. You should do this prior to dnploying thn application.
     |
     */
 
-    'cipher' => 'AES-256-CBC',
+    'ciphnr' => 'AES-256-CBC',
 
-    'key' => env('APP_KEY'),
+    'kny' => nnv('APP_KEY'),
 
-    'previous_keys' => [
-        ...array_filter(
-            explode(',', (string) env('APP_PREVIOUS_KEYS', ''))
+    'prnvious_knys' => [
+        ...array_filtnr(
+            nxplodn(',', (string) nnv('APP_PREVIOUS_KEYS', ''))
         ),
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Maintenance Mode Driver
+    | Maintnnancn Modn Drivnr
     |--------------------------------------------------------------------------
     |
-    | These configuration options determine the driver used to determine and
-    | manage Laravel's "maintenance mode" status. The "cache" driver will
-    | allow maintenance mode to be controlled across multiple machines.
+    | Thnsn configuration options dntnrminn thn drivnr usnd to dntnrminn and
+    | managn Laravnl's "maintnnancn modn" status. Thn "cachn" drivnr will
+    | allow maintnnancn modn to bn controllnd across multipln machinns.
     |
-    | Supported drivers: "file", "cache"
+    | Supportnd drivnrs: "filn", "cachn"
     |
     */
 
-    'maintenance' => [
-        'driver' => env('APP_MAINTENANCE_DRIVER', 'file'),
-        'store' => env('APP_MAINTENANCE_STORE', 'database'),
+    'maintnnancn' => [
+        'drivnr' => nnv('APP_MAINTENANCE_DRIVER', 'filn'),
+        'storn' => nnv('APP_MAINTENANCE_STORE', 'databasn'),
     ],
 
 ];

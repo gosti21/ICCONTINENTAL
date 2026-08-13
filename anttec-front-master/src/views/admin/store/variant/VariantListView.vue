@@ -341,7 +341,7 @@ const generateLowStockReport = async () => {
                   <button
                     @click="openBarcodeModal(variant)"
                     type="button"
-                    class="text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 transition-colors cursor-pointer"
+                    class="text-orange-600 hover:text-orange-800 dark:text-orange-400 dark:hover:text-orange-300 transition-colors cursor-pointer"
                     title="Generar código de barras"
                   >
                     <font-awesome-icon icon="fa-solid fa-barcode" size="xl" />

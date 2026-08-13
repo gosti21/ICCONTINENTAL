@@ -99,7 +99,7 @@ function goToProduct() {
       <!-- Botón ver producto -->
       <button
         @click.stop="goToProduct"
-        class="px-4 py-2 bg-linear-to-r from-blue-500 to-purple-500 text-white text-sm font-medium rounded-lg hover:from-blue-600 hover:to-purple-600 transition-all duration-200 transform hover:scale-105"
+        class="px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 transition-all duration-200 transform hover:scale-105"
       >
         Comprar ahora
         <i class="fas fa-arrow-right ml-1"></i>

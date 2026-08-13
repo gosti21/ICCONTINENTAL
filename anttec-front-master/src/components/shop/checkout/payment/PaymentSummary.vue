@@ -106,6 +106,7 @@ const isLocal =
   window.location.hostname === 'localhost' ||
   window.location.hostname === '127.0.0.1'
 
+// LOGO DE NIUBIZ: en producción se carga desde public/logo-dark.png.
 const merchantLogo = isLocal
   ? 'img/comercio.png'
   : window.location.origin + '/logo-dark.png'
@@ -130,9 +131,9 @@ const preInitializeNiubiz = () => {
       amount: 1,
       expirationminutes: '20',
       timeouturl: window.location.origin + '/checkout/payment/timeout',
-      merchantname: 'FERREBOM',
+      merchantname: 'EL MUNDO DEL PERNO',
       merchantlogo: merchantLogo,
-      formbuttoncolor: '#753089',
+      formbuttoncolor: '#ea580c',
       method: 'POST',
       action: window.location.origin + '/checkout/payment/callback',
       complete: () => {}

@@ -226,7 +226,7 @@ onMounted(() => {
                 :class="[
                   'px-2 py-1 rounded text-xs font-medium',
                   normalizeDeliveryType(shipment.delivery_type) === 'shipment'
-                    ? 'bg-purple-100 text-purple-800'
+                    ? 'bg-orange-100 text-orange-800'
                     : 'bg-blue-100 text-blue-800'
                 ]"
               >

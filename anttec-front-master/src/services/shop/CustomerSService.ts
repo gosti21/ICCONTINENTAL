@@ -9,9 +9,18 @@ class CustomerSService {
   }
 
   async getByDNI(dni: string | number): Promise<customerDNISI> {
-    const res = await this.api.get<ApiListResponseI<customerDNISI>>(`/customers/dni/${dni}`, )
-    console.log(res.data.message)
-    return res.data.data
+    const res = await this.api.get<ApiListResponseI<customerDNISI>>(`/customers/dni/${dni}`)
+    const customer = res.data.data
+
+    if (!customer?.name?.trim() || !customer?.last_name?.trim()) {
+      throw new Error('El proveedor respondió sin nombres completos para este DNI')
+    }
+
+    return {
+      ...customer,
+      name: customer.name.trim(),
+      last_name: customer.last_name.trim(),
+    }
   }
 
   async getByRUC(ruc: string | number): Promise<customerRUCSI> {

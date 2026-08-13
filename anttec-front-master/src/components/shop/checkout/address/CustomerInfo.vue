@@ -47,6 +47,8 @@ const searchDNI = async () => {
   }
 
   isSearchingDNI.value = true
+  setFieldValue('name', '')
+  setFieldValue('last_name', '')
 
   try {
     useSweetAlert({
@@ -101,6 +103,13 @@ const searchDNI = async () => {
           timer: 3000,
         })
       }
+    } else {
+      useSweetAlert({
+        title: 'Datos incompletos',
+        text: err instanceof Error ? err.message : 'La consulta no devolvió nombres válidos.',
+        icon: 'warning',
+        timer: 3000,
+      })
     }
   } finally {
     isSearchingDNI.value = false

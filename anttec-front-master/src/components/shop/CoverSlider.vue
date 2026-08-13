@@ -113,7 +113,7 @@ onMounted(() => {
 /* Estilos personalizados para los botones de navegación */
 :deep(.swiper-button-next),
 :deep(.swiper-button-prev) {
-  color: #753089;
+  color: #ea580c;
   font-weight: 600;
 }
 
@@ -138,7 +138,7 @@ onMounted(() => {
 
 :deep(.swiper-pagination-bullet-active) {
   opacity: 1;
-  background-color: #753089;
+  background-color: #ea580c;
   width: 12px;
   height: 12px;
 }
