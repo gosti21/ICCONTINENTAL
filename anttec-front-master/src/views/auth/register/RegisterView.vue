@@ -122,7 +122,7 @@ onMounted(async () => {
 
 <template>
   <AnimationLoader v-if="isLoading" />
-  <AuthenticationCard v-else class="my-10">
+  <AuthenticationCard v-else split wide>
     <template #title>Crear Cuenta</template>
     <template #subtitle>Regístrate para comenzar a comprar</template>
 
@@ -252,7 +252,7 @@ onMounted(async () => {
           ¿Ya tienes cuenta?
           <router-link
             :to="{ name: 'login' }"
-            class="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
+            class="font-semibold text-orange-600 hover:text-orange-700 dark:text-orange-400"
           >
             Inicia sesión aquí
           </router-link>

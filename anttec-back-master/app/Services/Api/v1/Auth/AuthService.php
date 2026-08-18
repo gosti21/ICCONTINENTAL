@@ -6,6 +6,7 @@ use App\Contracts\Api\v1\Auth\AuthInterface;
 use App\Events\UserRegistered;
 use App\Exceptions\Api\v1\Auth\InvalidCredentialsException;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 
 class AuthService
 {
@@ -42,7 +43,17 @@ class AuthService
         $user = $this->repository->register($data);
         $token = $user->createToken('api-token')->plainTextToken;
 
-        event(new UserRegistered($user));
+        try {
+            event(new UserRegistered($user));
+        } catch (\Throwable $exception) {
+            // La cuenta ya fue creada. Un fallo temporal del proveedor de
+            // correo no debe convertir el registro en un error ni provocar
+            // que el usuario vuelva a intentarlo con el mismo email.
+            Log::error('La cuenta fue creada, pero no se pudo enviar el correo de confirmación', [
+                'user_id' => $user->id,
+                'error' => $exception->getMessage(),
+            ]);
+        }
 
         return [
             'token' => $token,

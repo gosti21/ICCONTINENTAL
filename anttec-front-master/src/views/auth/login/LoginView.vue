@@ -108,11 +108,11 @@ onMounted(async () => {
 
 <template>
   <AnimationLoader v-if="isLoading" />
-  <AuthenticationCard v-else>
+  <AuthenticationCard v-else split>
     <form action="" method="POST" @submit="onSubmit">
       <div class="mb-4">
         <label for="email" class="block mb-2 font-medium text-gray-700 dark:text-gray-300"
-          >Correo Electronico</label
+          >Correo electrónico</label
         >
         <input
           v-model="email"
@@ -121,7 +121,7 @@ onMounted(async () => {
           type="email"
           name="email"
           autocomplete="email"
-          class="mt-1 bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-900 dark:border-gray-700 dark:placeholder-gray-400 dark:text-gray-200 dark:focus:ring-indigo-600 dark:focus:border-indigo-600 focus:outline-none focus:ring-1"
+          class="mt-1 bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-orange-500 focus:border-orange-500 block w-full p-2.5 dark:bg-gray-900 dark:border-gray-700 dark:placeholder-gray-400 dark:text-gray-200 focus:outline-none focus:ring-1"
         />
         <span class="text-red-400">{{ errors.email }}</span>
       </div>
@@ -138,7 +138,7 @@ onMounted(async () => {
             name="password"
             autocomplete="current-password"
             :type="showPassword ? 'text' : 'password'"
-            class="mt-1 bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 pr-10 dark:bg-gray-900 dark:border-gray-700 dark:placeholder-gray-400 dark:text-gray-200 dark:focus:ring-indigo-600 dark:focus:border-indigo-600 focus:outline-none focus:ring-1"
+            class="mt-1 bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-orange-500 focus:border-orange-500 block w-full p-2.5 pr-10 dark:bg-gray-900 dark:border-gray-700 dark:placeholder-gray-400 dark:text-gray-200 focus:outline-none focus:ring-1"
           />
           <button
             type="button"
@@ -164,7 +164,7 @@ onMounted(async () => {
               name: 'register',
               query: route.query.redirect ? { redirect: route.query.redirect } : {},
             }"
-            class="text-indigo-600 dark:text-indigo-400 hover:underline font-medium"
+            class="text-orange-600 dark:text-orange-400 hover:underline font-semibold"
           >
             Crear cuenta
           </router-link>
