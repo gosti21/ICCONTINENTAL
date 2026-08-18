@@ -7,7 +7,7 @@ return [
         |--------------------------------------------------------------------------
         */
     'apisperu_lookup' => [
-        'base_url' => env('APISPERU_LOOKUP_URL', 'https://apiperu.dev/api'),
+        'base_url' => env('APISPERU_LOOKUP_URL', 'https://dniruc.apisperu.com/api/v1'),
         'token' => env('APISPERU_LOOKUP_TOKEN', env('APISPERU_DNI_TOKEN')),
     ],
 

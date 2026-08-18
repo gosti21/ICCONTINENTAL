@@ -19,12 +19,12 @@ class SearchDNIService
 
         try {
             $response = Http::baseUrl(rtrim((string) config('integrations.apisperu_lookup.base_url'), '/'))
-                ->withToken((string) config('integrations.apisperu_lookup.token'))
                 ->acceptJson()
-                ->asJson()
                 ->connectTimeout(8)
                 ->timeout(15)
-                ->post('dni', ['dni' => $dni]);
+                ->get("dni/{$dni}", [
+                    'token' => (string) config('integrations.apisperu_lookup.token'),
+                ]);
 
             if (! $response->successful()) {
                 Log::warning('APIsPerú rechazó la consulta DNI', [
@@ -45,7 +45,7 @@ class SearchDNIService
                 return null;
             }
 
-            if (($responseData['success'] ?? false) !== true || ! is_array($responseData['data'] ?? null)) {
+            if (array_key_exists('success', $responseData) && $responseData['success'] !== true) {
                 Log::warning('APIsPerú no encontró datos para el DNI', [
                     'dni' => $dni,
                     'message' => $responseData['message'] ?? null,
@@ -54,7 +54,9 @@ class SearchDNIService
                 return null;
             }
 
-            $payload = $responseData['data'];
+            $payload = is_array($responseData['data'] ?? null)
+                ? $responseData['data']
+                : $responseData;
 
             $name = trim((string) ($payload['nombres'] ?? $payload['name'] ?? ''));
             $lastName = trim((string) ($payload['apellidoCompleto'] ?? $payload['apellidos'] ?? $payload['last_name'] ?? ''));
@@ -78,7 +80,7 @@ class SearchDNIService
             return [
                 'name' => $name,
                 'last_name' => $lastName,
-                'document_number' => (string) ($payload['numeroDocumento'] ?? $payload['numero_documento'] ?? $dni),
+                'document_number' => (string) ($payload['dni'] ?? $payload['numeroDocumento'] ?? $payload['numero_documento'] ?? $dni),
             ];
         } catch (ConnectionException $e) {
             Log::error("No se pudo conectar con APIsPerú para consultar DNI {$dni}: {$e->getMessage()}");

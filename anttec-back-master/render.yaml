@@ -17,6 +17,8 @@ services:
         value: https://iccontinental-1-m0s1.onrender.com
       - key: APISPERU_LOOKUP_TOKEN
         sync: false
+      - key: APISPERU_LOOKUP_URL
+        value: https://dniruc.apisperu.com/api/v1
       - key: OPENAI_API_KEY
         sync: false
       - key: OPENAI_BASE_URL

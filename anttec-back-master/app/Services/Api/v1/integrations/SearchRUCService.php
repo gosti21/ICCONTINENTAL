@@ -19,12 +19,12 @@ class SearchRUCService
 
         try {
             $response = Http::baseUrl(rtrim((string) config('integrations.apisperu_lookup.base_url'), '/'))
-                ->withToken((string) config('integrations.apisperu_lookup.token'))
                 ->acceptJson()
-                ->asJson()
                 ->connectTimeout(8)
                 ->timeout(15)
-                ->post('ruc', ['ruc' => $ruc]);
+                ->get("ruc/{$ruc}", [
+                    'token' => (string) config('integrations.apisperu_lookup.token'),
+                ]);
 
             if (! $response->successful()) {
                 Log::warning('APIsPerú rechazó la consulta RUC', [
@@ -45,7 +45,7 @@ class SearchRUCService
                 return null;
             }
 
-            if (($responseData['success'] ?? false) !== true || ! is_array($responseData['data'] ?? null)) {
+            if (array_key_exists('success', $responseData) && $responseData['success'] !== true) {
                 Log::warning('APIsPerú no encontró datos para el RUC', [
                     'ruc' => $ruc,
                     'message' => $responseData['message'] ?? null,
@@ -54,8 +54,10 @@ class SearchRUCService
                 return null;
             }
 
-            $payload = $responseData['data'];
-            $businessName = trim((string) ($payload['nombre_o_razon_social'] ?? $payload['razon_social'] ?? ''));
+            $payload = is_array($responseData['data'] ?? null)
+                ? $responseData['data']
+                : $responseData;
+            $businessName = trim((string) ($payload['razonSocial'] ?? $payload['nombre_o_razon_social'] ?? $payload['razon_social'] ?? ''));
             $taxAddress = trim((string) ($payload['direccion_completa'] ?? $payload['direccion'] ?? ''));
 
             if ($businessName === '') {
