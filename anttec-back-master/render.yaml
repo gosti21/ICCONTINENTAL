@@ -25,5 +25,15 @@ services:
         value: https://api.openai.com/v1
       - key: OPENAI_MODEL
         value: gpt-5.4-nano
+      - key: MAIL_MAILER
+        value: resend
+      - key: RESEND_KEY
+        sync: false
+      - key: MAIL_FROM_ADDRESS
+        sync: false
+      - key: MAIL_FROM_NAME
+        value: EL MUNDO DEL PERNO
+      - key: QUEUE_CONNECTION
+        value: sync
       - key: PORT
         value: 10000

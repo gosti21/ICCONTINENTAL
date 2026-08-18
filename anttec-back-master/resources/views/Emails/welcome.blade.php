@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bienvenido</title>
+    <title>Cuenta creada</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -14,7 +14,7 @@
             padding: 20px;
         }
         .header {
-            background-color: #4F46E5;
+            background-color: #f97316;
             color: white;
             padding: 30px;
             text-align: center;
@@ -28,7 +28,7 @@
         .button {
             display: inline-block;
             padding: 12px 30px;
-            background-color: #4F46E5;
+            background-color: #f97316;
             color: white;
             text-decoration: none;
             border-radius: 5px;
@@ -44,28 +44,28 @@
 </head>
 <body>
     <div class="header">
-        <h1>¡Bienvenido a {{ config('app.name') }}!</h1>
+        <h1>¡Bienvenido a EL MUNDO DEL PERNO!</h1>
     </div>
 
     <div class="content">
         <p>Hola <strong>{{ $user->name }} {{ $user->last_name }}</strong>,</p>
 
-        <p>¡Gracias por registrarte en nuestra plataforma! Estamos emocionados de tenerte con nosotros.</p>
+        <p>¡Gracias por registrarte! Confirmamos que tu cuenta fue creada correctamente.</p>
 
-        <p>Tu cuenta ha sido creada exitosamente con el correo electrónico: <strong>{{ $user->email }}</strong></p>
+        <p>Correo registrado: <strong>{{ $user->email }}</strong></p>
 
-        <p>Ahora puedes realizar compras desde nuestra plataforma y mucho más:</p>
+        <p>Ya puedes consultar nuestro catálogo de pernos, tuercas, fijaciones, repuestos automotrices y productos para maquinaria pesada.</p>
 
         <p>Si tienes alguna pregunta o necesitas ayuda, no dudes en contactarnos.</p>
 
         <center>
-            <a href="https://anttec.shop/" class="button">Ir a la plataforma</a>
+            <a href="{{ rtrim((string) config('app.url_front'), '/') }}" class="button">Ir a EL MUNDO DEL PERNO</a>
         </center>
     </div>
 
     <div class="footer">
         <p>Este es un correo automático, por favor no responder.</p>
-        <p>&copy; {{ date('Y') }} {{ config('app.name') }}. Todos los derechos reservados.</p>
+        <p>&copy; {{ date('Y') }} EL MUNDO DEL PERNO. Todos los derechos reservados.</p>
     </div>
 </body>
 </html>

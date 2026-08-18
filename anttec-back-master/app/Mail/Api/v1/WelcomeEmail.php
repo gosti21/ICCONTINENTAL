@@ -27,7 +27,7 @@ class WelcomeEmail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: '¡Bienvenido a ' . config('app.name') . '!',
+            subject: 'Confirma la creación de tu cuenta en EL MUNDO DEL PERNO',
         );
     }
 
