@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import loginMachinery from '@/assets/img/login-machinery.png'
+import registerIndustrial from '@/assets/img/register-industrial.png'
 import AuthenticationCardLogo from './AuthenticationCardLogo.vue'
 
-withDefaults(defineProps<{ split?: boolean; wide?: boolean }>(), {
+const props = withDefaults(defineProps<{ split?: boolean; wide?: boolean; image?: 'login' | 'register' }>(), {
   split: false,
   wide: false,
+  image: 'login',
 })
+
+const backgroundImage = props.image === 'register' ? registerIndustrial : loginMachinery
 </script>
 
 <template>
@@ -15,7 +19,7 @@ withDefaults(defineProps<{ split?: boolean; wide?: boolean }>(), {
       aria-label="Maquinaria pesada y elementos de fijación"
     >
       <img
-        :src="loginMachinery"
+        :src="backgroundImage"
         alt="Tractor de maquinaria pesada junto a pernos y tuercas"
         class="auth-hero-image absolute inset-0 h-full w-full object-cover"
       />

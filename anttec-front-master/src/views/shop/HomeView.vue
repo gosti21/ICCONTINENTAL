@@ -47,12 +47,23 @@ onMounted(() => {
 
 <template>
   <CoverSlider />
-  <section class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
-    <div class="mb-8">
-      <h2 class="text-2xl sm:text-2xl lg:text-4xl font-bold text-gray-900 dark:text-gray-100">
+  <section class="border-b border-slate-200 bg-white">
+    <div class="container mx-auto grid grid-cols-2 gap-5 px-4 py-6 sm:px-6 lg:grid-cols-4 lg:px-8">
+      <div class="flex items-center gap-3"><span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-orange-100 text-orange-600"><font-awesome-icon icon="fa-solid fa-screwdriver-wrench" /></span><div><strong class="block text-sm text-slate-900">Asesoría técnica</strong><span class="text-xs text-slate-500">Compra con precisión</span></div></div>
+      <div class="flex items-center gap-3"><span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-orange-100 text-orange-600"><font-awesome-icon icon="fa-solid fa-truck-fast" /></span><div><strong class="block text-sm text-slate-900">Envíos seguros</strong><span class="text-xs text-slate-500">Seguimiento de pedidos</span></div></div>
+      <div class="flex items-center gap-3"><span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-orange-100 text-orange-600"><font-awesome-icon icon="fa-solid fa-shield" /></span><div><strong class="block text-sm text-slate-900">Compra protegida</strong><span class="text-xs text-slate-500">Pago confiable</span></div></div>
+      <div class="flex items-center gap-3"><span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-orange-100 text-orange-600"><font-awesome-icon icon="fa-solid fa-headset" /></span><div><strong class="block text-sm text-slate-900">Soporte directo</strong><span class="text-xs text-slate-500">Atención personalizada</span></div></div>
+    </div>
+  </section>
+
+  <section id="productos-destacados" class="bg-slate-50 scroll-mt-40">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
+    <div class="mb-9">
+      <span class="text-xs font-extrabold uppercase tracking-[0.2em] text-orange-600">Catálogo destacado</span>
+      <h2 class="mt-2 text-3xl lg:text-4xl font-black text-slate-950 dark:text-gray-100">
         Últimos productos
       </h2>
-      <p class="text-gray-600 dark:text-gray-400 mt-2">Descubre nuestras últimas novedades</p>
+      <p class="text-slate-600 dark:text-gray-400 mt-2">Soluciones seleccionadas para trabajos que no pueden fallar.</p>
     </div>
 
     <!-- Loading Skeleton -->
@@ -89,7 +100,7 @@ onMounted(() => {
       <article
         v-for="(product, index) in productLastList"
         :key="product.id"
-        class="bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group flex flex-col"
+        class="bg-white dark:bg-gray-800 rounded-2xl border border-slate-200 shadow-sm hover:shadow-xl hover:shadow-slate-900/10 transition-all duration-300 overflow-hidden group flex flex-col"
       >
         <router-link
           :to="{
@@ -124,7 +135,7 @@ onMounted(() => {
           <div class="p-4 flex flex-col grow">
             <!-- Brand -->
             <span
-              class="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-2"
+              class="text-xs font-bold text-orange-600 dark:text-orange-400 uppercase tracking-wide mb-2"
             >
               {{ product.brand }}
             </span>
@@ -144,7 +155,7 @@ onMounted(() => {
 
               <!-- Button -->
               <span
-                class="block w-full text-center bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 transform group-hover:scale-105 shadow-md"
+                class="block w-full text-center bg-slate-950 hover:bg-orange-600 dark:bg-orange-600 dark:hover:bg-orange-500 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 shadow-md"
               >
                 Ver Producto
               </span>
@@ -158,6 +169,7 @@ onMounted(() => {
     <div v-else class="text-center py-16">
       <InfoAlert message="Aún no hay productos disponibles" />
     </div>
+  </div>
   </section>
 </template>
 

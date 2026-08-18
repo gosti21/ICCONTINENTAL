@@ -1,153 +1,51 @@
 <script setup lang="ts">
-import noImg from '@/assets/img/no-image.jpg'
-import { useSweetAlert } from '@/composables/useSweetAlert'
-import type { coverSI } from '@/interfaces/shop/CoverSInterface'
-import CoverSService from '@/services/shop/CoverSService'
-import 'swiper/css'
-import 'swiper/css/navigation'
-import 'swiper/css/pagination'
-import { Autoplay, Navigation, Pagination } from 'swiper/modules'
-import { Swiper, SwiperSlide } from 'swiper/vue'
-import { computed, onMounted, ref } from 'vue'
-
-const coverSService = new CoverSService()
-
-const covers = ref<coverSI[]>([])
-const isLoading = ref(true)
-const error = ref<string | null>(null)
-
-const coversList = computed(() => covers.value ?? [])
-
-const loadCovers = async () => {
-  try {
-    const data = await coverSService.getAll()
-    // Agregar imgLoaded en false a cada cover
-    covers.value = data.map((cover) => ({ ...cover, imgLoaded: false }))
-  } catch (err) {
-    useSweetAlert({
-      title: 'Algo salió mal',
-      text: 'No se pudieron cargar las portadas',
-      icon: 'error',
-      timer: 0,
-    })
-    error.value = 'No se pudieron cargar las portadas.'
-    console.error(err)
-  } finally {
-    isLoading.value = false
-  }
-}
-
-const handleImageLoad = (index: number) => {
-  if (covers.value[index]) {
-    covers.value[index].imgLoaded = true
-  }
-}
-
-onMounted(() => {
-  loadCovers()
-})
+import heroImage from '@/assets/img/home-industrial-hero.png'
 </script>
 
 <template>
-  <section class="w-full">
-    <!-- Skeleton Loader -->
-    <div
-      v-if="isLoading"
-      class="w-full aspect-3/1 bg-gray-200 dark:bg-gray-800 animate-pulse flex items-center justify-center"
-    >
-      <img :src="noImg" alt="Cargando" class="w-16 h-16 opacity-30" />
-    </div>
+  <section class="relative isolate min-h-[520px] overflow-hidden bg-slate-950 lg:min-h-[620px]">
+    <img :src="heroImage" alt="Maquinaria pesada con pernos industriales" class="hero-image absolute inset-0 -z-20 h-full w-full object-cover object-[68%_center]" />
+    <div class="absolute inset-0 -z-10 bg-gradient-to-r from-black via-black/80 to-black/5"></div>
+    <div class="industrial-grid absolute inset-0 -z-10 opacity-20"></div>
 
-    <!-- Swiper Slider -->
-    <Swiper
-      v-else-if="coversList.length > 0"
-      :modules="[Autoplay, Pagination, Navigation]"
-      :slides-per-view="1"
-      :space-between="0"
-      :loop="true"
-      :autoplay="{
-        delay: 3000,
-        disableOnInteraction: false,
-      }"
-      :pagination="{
-        clickable: true,
-      }"
-      :navigation="true"
-      class="w-full aspect-3/1"
-    >
-      <SwiperSlide v-for="(cover, index) in coversList" :key="cover.id">
-        <div class="relative w-full h-full">
-          <!-- Skeleton individual para cada imagen -->
-          <div
-            v-if="!cover.imgLoaded"
-            class="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800 animate-pulse"
-          >
-            <img :src="noImg" alt="Cargando" class="w-16 h-16 opacity-30" />
-          </div>
-
-          <!-- Imagen de la portada -->
-          <img
-            :src="cover.image"
-            :alt="`Portada ${index + 1}`"
-            loading="lazy"
-            class="w-full h-full object-cover object-center transition-opacity duration-300"
-            :class="{ 'opacity-0': !cover.imgLoaded }"
-            @load="handleImageLoad(index)"
-            @error="handleImageLoad(index)"
-          />
+    <div class="container mx-auto flex min-h-[520px] items-center px-5 py-16 sm:px-8 lg:min-h-[620px] lg:px-12">
+      <div class="max-w-2xl text-white">
+        <div class="mb-5 inline-flex items-center gap-2 rounded-full border border-orange-400/30 bg-orange-500/10 px-4 py-2 backdrop-blur-sm">
+          <span class="h-2 w-2 animate-pulse rounded-full bg-orange-400"></span>
+          <span class="text-xs font-bold uppercase tracking-[0.18em] text-orange-200">Fijaciones para trabajos exigentes</span>
         </div>
-      </SwiperSlide>
-    </Swiper>
-
-    <!-- Mensaje cuando no hay portadas -->
-    <div
-      v-else
-      class="w-full aspect-3/1 bg-gray-100 dark:bg-gray-800 flex items-center justify-center"
-    >
-      <p class="text-gray-500 dark:text-gray-400 text-lg">No hay portadas disponibles</p>
+        <h1 class="text-4xl font-black leading-[1.05] sm:text-5xl lg:text-7xl">
+          La fuerza comienza con <span class="text-orange-500">el perno correcto.</span>
+        </h1>
+        <p class="mt-6 max-w-xl text-base leading-relaxed text-slate-200 sm:text-lg">
+          Pernos, tuercas y soluciones de fijación para automotores, industria y maquinaria pesada. Atención técnica para elegir con seguridad.
+        </p>
+        <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+          <a href="#productos-destacados" class="inline-flex items-center justify-center gap-2 rounded-xl bg-orange-600 px-6 py-3.5 font-bold text-white shadow-lg shadow-orange-950/30 transition hover:-translate-y-0.5 hover:bg-orange-500">
+            Explorar productos <font-awesome-icon icon="fa-solid fa-angles-right" />
+          </a>
+          <a href="https://wa.me/51964645037" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-2 rounded-xl border border-white/25 bg-white/10 px-6 py-3.5 font-semibold text-white backdrop-blur-sm transition hover:bg-white/20">
+            <font-awesome-icon icon="fa-brands fa-whatsapp" /> Hablar con un asesor
+          </a>
+        </div>
+        <div class="mt-10 flex flex-wrap gap-x-8 gap-y-3 text-sm text-slate-300">
+          <span class="flex items-center gap-2"><font-awesome-icon icon="fa-solid fa-circle-check" class="text-orange-400" /> Asesoría especializada</span>
+          <span class="flex items-center gap-2"><font-awesome-icon icon="fa-solid fa-circle-check" class="text-orange-400" /> Calidad industrial</span>
+          <span class="flex items-center gap-2"><font-awesome-icon icon="fa-solid fa-circle-check" class="text-orange-400" /> Atención en Huancayo</span>
+        </div>
+      </div>
     </div>
+    <div class="absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-orange-600 via-amber-400 to-transparent"></div>
   </section>
 </template>
 
 <style scoped>
-/* Estilos personalizados para los botones de navegación */
-:deep(.swiper-button-next),
-:deep(.swiper-button-prev) {
-  color: #ea580c;
-  font-weight: 600;
+.industrial-grid {
+  background-image: linear-gradient(rgba(255,255,255,.08) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.08) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: linear-gradient(to right, black, transparent 72%);
 }
-
-:deep(.swiper-button-next:hover),
-:deep(.swiper-button-prev:hover) {
-  transform: scale(1.1);
-}
-
-:deep(.swiper-button-next::after),
-:deep(.swiper-button-prev::after) {
-  font-size: 24px;
-  font-weight: bold;
-}
-
-/* Estilos para la paginación */
-:deep(.swiper-pagination-bullet) {
-  background-color: rgba(117, 48, 137, 0.5);
-  opacity: 0.7;
-  width: 10px;
-  height: 10px;
-}
-
-:deep(.swiper-pagination-bullet-active) {
-  opacity: 1;
-  background-color: #ea580c;
-  width: 12px;
-  height: 12px;
-}
-
-/* Responsivo: Ocultar botones en móviles */
-@media (max-width: 640px) {
-  :deep(.swiper-button-next),
-  :deep(.swiper-button-prev) {
-    display: none;
-  }
-}
+.hero-image { animation: hero-drift 20s ease-in-out infinite alternate; }
+@keyframes hero-drift { from { transform: scale(1.01); } to { transform: scale(1.07) translateX(-.8%); } }
+@media (prefers-reduced-motion: reduce) { .hero-image { animation: none; } }
 </style>

@@ -122,7 +122,7 @@ onMounted(async () => {
 
 <template>
   <AnimationLoader v-if="isLoading" />
-  <AuthenticationCard v-else split wide>
+  <AuthenticationCard v-else split wide image="register">
     <template #title>Crear Cuenta</template>
     <template #subtitle>Regístrate para comenzar a comprar</template>
 
