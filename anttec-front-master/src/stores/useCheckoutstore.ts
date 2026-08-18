@@ -419,12 +419,12 @@ export const useCheckoutStore = defineStore('checkout', () => {
       }
 
       // 2. Validar razón social (min 3, max 100)
-      if (billing.customer.business_name.length < 3 || billing.customer.business_name.length > 100) {
+      if (billing.customer.business_name.length < 3 || billing.customer.business_name.length > 200) {
         return false
       }
 
       // 3. Validar dirección fiscal (min 1, max 150)
-      if (billing.customer.tax_address.length < 1 || billing.customer.tax_address.length > 150) {
+      if (billing.customer.tax_address.length < 1 || billing.customer.tax_address.length > 250) {
         return false
       }
 

@@ -1,5 +1,29 @@
 <script setup lang="ts">
 import heroImage from '@/assets/img/home-industrial-hero.png'
+import type { coverSI } from '@/interfaces/shop/CoverSInterface'
+import { API_BASE_URL } from '@/services/apiConfig'
+import CoverSService from '@/services/shop/CoverSService'
+import { computed, onMounted, ref } from 'vue'
+
+const coverService = new CoverSService()
+const covers = ref<coverSI[]>([])
+const failedCoverIds = ref(new Set<number>())
+
+const apiOrigin = new URL(API_BASE_URL).origin
+const coverUrl = (url: string) => new URL(url, apiOrigin).toString()
+const visibleCovers = computed(() => covers.value.filter((cover) => !failedCoverIds.value.has(cover.id)))
+
+const hideBrokenCover = (id: number) => {
+  failedCoverIds.value = new Set([...failedCoverIds.value, id])
+}
+
+onMounted(async () => {
+  try {
+    covers.value = await coverService.getAll()
+  } catch {
+    // El hero local permanece visible aunque el servicio de portadas no responda.
+  }
+})
 </script>
 
 <template>
@@ -36,6 +60,23 @@ import heroImage from '@/assets/img/home-industrial-hero.png'
       </div>
     </div>
     <div class="absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-orange-600 via-amber-400 to-transparent"></div>
+  </section>
+
+  <section v-if="visibleCovers.length" class="bg-slate-950 px-4 py-6 sm:px-6">
+    <div class="container mx-auto">
+      <div class="mb-4 flex items-center justify-between gap-4">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-[0.18em] text-orange-400">Promociones</span>
+          <h2 class="mt-1 text-xl font-black text-white">Portadas destacadas</h2>
+        </div>
+        <span class="text-xs text-slate-400">Desliza para ver más →</span>
+      </div>
+      <div class="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3">
+        <article v-for="cover in visibleCovers" :key="cover.id" class="min-w-[88%] snap-center overflow-hidden rounded-2xl border border-white/10 bg-slate-900 shadow-xl sm:min-w-[70%] lg:min-w-[48%]">
+          <img :src="coverUrl(cover.image)" :alt="`Portada promocional ${cover.order}`" class="aspect-3/1 w-full object-cover" loading="lazy" @error="hideBrokenCover(cover.id)" />
+        </article>
+      </div>
+    </div>
   </section>
 </template>
 

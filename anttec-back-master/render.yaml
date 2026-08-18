@@ -19,6 +19,26 @@ services:
         sync: false
       - key: APISPERU_LOOKUP_URL
         value: https://dniruc.apisperu.com/api/v1
+      - key: BILLING_PROVIDER
+        value: apisperu
+      - key: APISPERU_TOKEN
+        sync: false
+      - key: APISPERU_RUC
+        sync: false
+      - key: APISPERU_RAZON_SOCIAL
+        sync: false
+      - key: APISPERU_NOMBRE_COMERCIAL
+        value: EL MUNDO DEL PERNO
+      - key: APISPERU_UBIGEO
+        sync: false
+      - key: APISPERU_DEPARTAMENTO
+        value: JUNIN
+      - key: APISPERU_PROVINCIA
+        value: HUANCAYO
+      - key: APISPERU_DISTRITO
+        value: HUANCAYO
+      - key: APISPERU_DIRECCION
+        sync: false
       - key: OPENAI_API_KEY
         sync: false
       - key: OPENAI_BASE_URL
@@ -35,5 +55,7 @@ services:
         value: EL MUNDO DEL PERNO
       - key: QUEUE_CONNECTION
         value: sync
+      - key: FILESYSTEM_DISK
+        value: public
       - key: PORT
         value: 10000

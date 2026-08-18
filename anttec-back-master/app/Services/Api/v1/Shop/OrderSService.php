@@ -18,6 +18,7 @@ use App\Services\Api\v1\integrations\NiubizService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class OrderSService
 {
@@ -225,9 +226,10 @@ class OrderSService
                     );
 
                     if (!($voucherResult['success'] ?? false)) {
-                        throw new BadRequestException(
-                            $voucherResult['error'] ?? 'No se pudo generar el comprobante'
-                        );
+                        Log::warning('Pago aprobado con comprobante pendiente de emisión', [
+                            'order_id' => $order->id,
+                            'error' => $voucherResult['error'] ?? 'No se pudo generar el comprobante',
+                        ]);
                     }
 
                     $order->refresh();
@@ -253,6 +255,7 @@ class OrderSService
                 ));
 
                 $niubizRes['voucher_path'] = $order->voucher?->path;
+                $niubizRes['voucher_pending'] = ! filled($niubizRes['voucher_path']);
 
                 return $niubizRes;
             }

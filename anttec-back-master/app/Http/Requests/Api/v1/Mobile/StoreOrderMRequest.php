@@ -57,12 +57,12 @@ class StoreOrderMRequest extends FormRequest
             ],
             'customer.business_name' => [
                 'string',
-                'between:3, 80',
+                'between:3, 200',
                 'required_with:customer.tax_address',
             ],
             'customer.tax_address' => [
                 'string',
-                'between:1, 120',
+                'between:1, 250',
                 'required_with:customer.business_name',
             ],
             'payment_method' => [

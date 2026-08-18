@@ -4,11 +4,11 @@ export const facturaSchema = object({
   business_name: string()
     .required('La razón social es obligatoria')
     .min(3, 'Debe de contener más de 3 caracteres')
-    .max(100, 'Debe contener menos de 100 caracteres'),
+    .max(200, 'Debe contener como máximo 200 caracteres'),
   tax_address: string()
     .required('La dirección fiscal es obligatoria')
     .min(1, 'Debe de contener más de 1 caracteres')
-    .max(150, 'Debe contener menos de 150 caracteres'),
+    .max(250, 'Debe contener como máximo 250 caracteres'),
   document_type: string()
     .required('El tipo de documento es obligatorio')
     .oneOf(['RUC'], 'Tipo de documento no válido'),

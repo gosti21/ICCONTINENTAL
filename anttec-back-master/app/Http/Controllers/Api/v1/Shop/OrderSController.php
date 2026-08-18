@@ -75,7 +75,9 @@ class OrderSController extends Controller
                 return view('Niubiz.payment-result', [
                     'success' => true,
                     'message' => '¡Pago exitoso!',
-                    'description' => 'Tu compra ha sido confirmada. Ya puedes descargar tu comprobante electrónico.',
+                    'description' => filled($res['voucher_path'] ?? null)
+                        ? 'Tu compra ha sido confirmada. Ya puedes descargar tu comprobante electrónico.'
+                        : 'Tu pago fue aprobado. Tu comprobante electrónico está pendiente de emisión.',
                     'orderId' => $orderId,
                     'transactionId' => $res['dataMap']['TRANSACTION_ID'] ?? null,
                     'voucherPath' => $res['voucher_path'] ?? null,
