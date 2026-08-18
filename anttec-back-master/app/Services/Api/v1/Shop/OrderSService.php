@@ -236,23 +236,32 @@ class OrderSService
                 }
 
                 // 9. Delegar al evento->listener->job
-                event(new OrderCreated(
-                    $userId,
-                    $order,
-                    [
-                        'document_type' => $snap['document_type'],
-                        'document_number' => $snap['document_number'],
-                        'customer' => $snap['customer'],
-                    ],
-                    [
-                        'receiver_info' => $snap['receiver_info'],
-                        'delivery_type' => $snap['delivery_type'],
-                        'shipment_cost' => $order->shipment_cost,
+                try {
+                    event(new OrderCreated(
+                        $userId,
+                        $order,
+                        [
+                            'document_type' => $snap['document_type'],
+                            'document_number' => $snap['document_number'],
+                            'customer' => $snap['customer'],
+                        ],
+                        [
+                            'receiver_info' => $snap['receiver_info'],
+                            'delivery_type' => $snap['delivery_type'],
+                            'shipment_cost' => $order->shipment_cost,
+                            'order_id' => $order->id,
+                            'address_id' => $snap['address_id']
+                        ],
+                        $snap['type_voucher'] ?? 'boleta'
+                    ));
+                } catch (\Throwable $exception) {
+                    // El pago y la orden ya fueron confirmados. Una falla de
+                    // correo no debe presentar la transacción como rechazada.
+                    Log::error('Pago aprobado, pero falló la notificación por correo', [
                         'order_id' => $order->id,
-                        'address_id' => $snap['address_id']
-                    ],
-                    $snap['type_voucher'] ?? 'boleta'
-                ));
+                        'error' => $exception->getMessage(),
+                    ]);
+                }
 
                 $niubizRes['voucher_path'] = $order->voucher?->path;
                 $niubizRes['voucher_pending'] = ! filled($niubizRes['voucher_path']);
