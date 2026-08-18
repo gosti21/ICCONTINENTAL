@@ -2,6 +2,7 @@
 
 namespace App\Services\Api\v1\integrations;
 
+use App\Exceptions\IdentityLookupException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -13,7 +14,7 @@ class SearchDNIService
         if (! filled(config('integrations.apisperu_lookup.token'))) {
             Log::warning('Consulta DNI no configurada: falta APISPERU_LOOKUP_TOKEN');
 
-            return null;
+            throw new IdentityLookupException('La consulta de DNI no está configurada en el servidor.');
         }
 
         try {
@@ -32,7 +33,11 @@ class SearchDNIService
                     'message' => $response->json('message'),
                 ]);
 
-                return null;
+                if (in_array($response->status(), [401, 403], true)) {
+                    throw new IdentityLookupException('APIsPerú rechazó el token configurado para consultar DNI.');
+                }
+
+                throw new IdentityLookupException('APIsPerú no está disponible para consultar DNI en este momento.');
             }
 
             $responseData = $response->json();
@@ -78,11 +83,13 @@ class SearchDNIService
         } catch (ConnectionException $e) {
             Log::error("No se pudo conectar con APIsPerú para consultar DNI {$dni}: {$e->getMessage()}");
 
-            return null;
+            throw new IdentityLookupException('No se pudo conectar con APIsPerú para consultar el DNI.', previous: $e);
+        } catch (IdentityLookupException $e) {
+            throw $e;
         } catch (\Throwable $e) {
             Log::error("APIsPerú error DNI {$dni}: {$e->getMessage()}");
 
-            return null;
+            throw new IdentityLookupException('Ocurrió un error al consultar el DNI en APIsPerú.', previous: $e);
         }
     }
 }

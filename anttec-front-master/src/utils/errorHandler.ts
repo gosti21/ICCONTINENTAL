@@ -61,8 +61,11 @@ export function handleHttpError(error: AxiosError, options: ErrorHandlerOptions 
       break
 
     case 404:
-      // 404 de API - el recurso no existe en el backend
-      if (!silent) console.warn('404 API Resource not found:', error.config?.url)
+      // En APIs de búsqueda, 404 también puede significar que el dato consultado no existe.
+      if (!silent) {
+        const responseData = error.response?.data as { message?: string } | undefined
+        console.info(responseData?.message || 'Recurso no encontrado', error.config?.url)
+      }
 
       // Solo redirigir si está explícitamente habilitado
       if (redirect404) {
@@ -70,6 +73,12 @@ export function handleHttpError(error: AxiosError, options: ErrorHandlerOptions 
       }
       // En caso contrario, dejar que el componente maneje el error
       break
+
+    case 424: {
+      const responseData = error.response?.data as { message?: string } | undefined
+      if (!silent) console.warn(responseData?.message || 'El proveedor externo no está disponible')
+      break
+    }
 
     case 500:
     case 502:

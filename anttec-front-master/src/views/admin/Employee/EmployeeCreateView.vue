@@ -119,7 +119,7 @@ const searchDNI = async () => {
       } else {
         useSweetAlert({
           title: 'Error',
-          text: 'No se pudo consultar el DNI. Intenta de nuevo.',
+          text: errorMessage,
           icon: 'error',
           timer: 3000,
         })

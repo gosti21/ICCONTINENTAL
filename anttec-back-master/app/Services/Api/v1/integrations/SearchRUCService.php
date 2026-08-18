@@ -2,6 +2,7 @@
 
 namespace App\Services\Api\v1\integrations;
 
+use App\Exceptions\IdentityLookupException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -13,7 +14,7 @@ class SearchRUCService
         if (! filled(config('integrations.apisperu_lookup.token'))) {
             Log::warning('Consulta RUC no configurada: falta APISPERU_LOOKUP_TOKEN');
 
-            return null;
+            throw new IdentityLookupException('La consulta de RUC no está configurada en el servidor.');
         }
 
         try {
@@ -32,7 +33,11 @@ class SearchRUCService
                     'message' => $response->json('message'),
                 ]);
 
-                return null;
+                if (in_array($response->status(), [401, 403], true)) {
+                    throw new IdentityLookupException('APIsPerú rechazó el token configurado para consultar RUC.');
+                }
+
+                throw new IdentityLookupException('APIsPerú no está disponible para consultar RUC en este momento.');
             }
 
             $responseData = $response->json();
@@ -67,11 +72,13 @@ class SearchRUCService
         } catch (ConnectionException $e) {
             Log::error("No se pudo conectar con APIsPerú para consultar RUC {$ruc}: {$e->getMessage()}");
 
-            return null;
+            throw new IdentityLookupException('No se pudo conectar con APIsPerú para consultar el RUC.', previous: $e);
+        } catch (IdentityLookupException $e) {
+            throw $e;
         } catch (\Throwable $e) {
             Log::error("APIsPerú error RUC {$ruc}: {$e->getMessage()}");
 
-            return null;
+            throw new IdentityLookupException('Ocurrió un error al consultar el RUC en APIsPerú.', previous: $e);
         }
     }
 }

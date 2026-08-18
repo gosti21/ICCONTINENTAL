@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\v1\Shop;
 
+use App\Exceptions\IdentityLookupException;
 use App\Http\Controllers\Controller;
 use App\Services\Api\v1\Shop\CustomerSService;
 use Illuminate\Http\Request;
@@ -21,7 +22,14 @@ class CustomerSController extends Controller
             ], 422);
         }
 
-        $result = $this->service->getByCustomerDNI($dni);
+        try {
+            $result = $this->service->getByCustomerDNI($dni);
+        } catch (IdentityLookupException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage(),
+            ], 424);
+        }
 
         // 👇 HTTP status según resultado
         $httpStatus = $result['status'] ? 200 : 404;
@@ -38,7 +46,14 @@ class CustomerSController extends Controller
             ], 422);
         }
 
-        $result = $this->service->getBYCustomerRUC($ruc);
+        try {
+            $result = $this->service->getBYCustomerRUC($ruc);
+        } catch (IdentityLookupException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage(),
+            ], 424);
+        }
 
         // 👇 HTTP status según resultado
         $httpStatus = $result['status'] ? 200 : 404;

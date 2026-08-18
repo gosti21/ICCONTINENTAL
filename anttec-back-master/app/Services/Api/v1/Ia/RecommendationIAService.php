@@ -129,8 +129,8 @@ class RecommendationIAService
             }
 
             return $this->finalizeResponse($resolvedConversationId, $conversationState, [
-                'type' => 'local',
-                'message' => $this->buildLocalMessage($localRecommendations, $query),
+                'type' => 'openai_not_configured',
+                'message' => $this->buildOpenAiUnavailableMessage($query, $localRecommendations),
                 'products' => $localRecommendations,
             ]);
         } catch (Exception $e) {
@@ -140,11 +140,20 @@ class RecommendationIAService
             ]);
 
             return $this->finalizeResponse($resolvedConversationId, $conversationState, [
-                'type' => 'local_fallback',
-                'message' => $this->buildLocalMessage($localRecommendations, $query),
+                'type' => 'openai_unavailable',
+                'message' => $this->buildOpenAiUnavailableMessage($query, $localRecommendations),
                 'products' => $localRecommendations,
             ]);
         }
+    }
+
+    protected function buildOpenAiUnavailableMessage(string $query, array $products): string
+    {
+        if (! empty($products)) {
+            return 'El asesor con IA no está disponible en este momento. Encontré estas coincidencias en el catálogo, pero necesito que confirmes medida, paso de rosca, longitud, grado y aplicación antes de recomendar una compra.';
+        }
+
+        return 'El asesor con IA no está disponible en este momento. Tu consulta técnica no fue enviada a OpenAI; intenta nuevamente más tarde o comunícate con nuestro equipo para recibir orientación especializada.';
     }
 
     protected function buildLocalRecommendations(string $query, int $limit = 4, bool $onlyInStock = true): array
