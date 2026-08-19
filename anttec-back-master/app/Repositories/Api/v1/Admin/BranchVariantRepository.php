@@ -10,6 +10,10 @@ class BranchVariantRepository implements AdminBranchVariantInterface
 {
     public function getAllList(): Collection
     {
-        return BranchVariant::with(['variant', 'variant.optionProductValues'])->get();
+        return BranchVariant::with([
+            'variant.product.brand',
+            'variant.images',
+            'variant.optionProductValues.optionValue',
+        ])->get();
     }
 }

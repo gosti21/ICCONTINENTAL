@@ -19,12 +19,10 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => array_filter([
-        env('APP_URL_FRONT', 'http://localhost:5173'),
-        'http://localhost:5173',
-        'https://iccontinental-1-m0s1.onrender.com',
-        'https://iccontinental-lico.onrender.com',
-    ]),
+    // La API usa tokens Bearer y no cookies de sesión. Permitir cualquier
+    // origen hace posible consumirla desde Flutter Android, Windows y Web,
+    // incluyendo los puertos aleatorios que usa `flutter run -d chrome`.
+    'allowed_origins' => ['*'],
 
     'allowed_origins_patterns' => [],
 

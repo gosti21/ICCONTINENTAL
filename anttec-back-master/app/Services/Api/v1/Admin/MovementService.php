@@ -23,7 +23,7 @@ class MovementService extends BaseService
             foreach ($data['variants'] as $variantData) {
                 $variant = BranchVariant::find($variantData['branch_variant_id']);
 
-                if ($variant->stock <= $variantData['quantity']) {
+                if ($variant->stock < $variantData['quantity']) {
                     throw new InsufficentStockException();
                 }
             }
