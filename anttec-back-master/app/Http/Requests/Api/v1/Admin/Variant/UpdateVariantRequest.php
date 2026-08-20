@@ -4,6 +4,7 @@ namespace App\Http\Requests\Api\v1\Admin\Variant;
 
 use App\Exceptions\Api\v1\NotFoundException;
 use App\Models\Variant;
+use App\Rules\Api\v1\Admin\Shared\GreaterThanZeroInt;
 use App\Rules\Api\v1\Admin\Variant\GreaterThanZero;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\File;
@@ -50,6 +51,7 @@ class UpdateVariantRequest extends FormRequest
                 'sometimes',
                 'required',
                 'integer:strict',
+                new GreaterThanZeroInt,
             ],
             'status' => [
                 'sometimes',

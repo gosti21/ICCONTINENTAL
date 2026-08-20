@@ -34,6 +34,7 @@ class UpdateAddressSRequest extends FormRequest
                 'sometimes',
                 'required',
                 'integer:strict',
+                'min:0',
             ],
             'reference' => [
                 'sometimes',

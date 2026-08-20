@@ -44,6 +44,7 @@ class UpdateDistrictRequest extends FormRequest
                 'required',
                 'numeric:strict',
                 'decimal:2',
+                'min:0',
             ],
             'min_delivery_days' => [
                 'sometimes',

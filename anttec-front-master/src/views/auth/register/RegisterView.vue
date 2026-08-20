@@ -139,6 +139,8 @@ onMounted(async () => {
             v-bind="nameAttrs"
             id="name"
             type="text"
+            required
+            autocomplete="given-name"
             placeholder="Ingrese sus nombres"
             class="mt-1 bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-900 dark:border-gray-700 dark:placeholder-gray-400 dark:text-gray-200 dark:focus:ring-indigo-600 dark:focus:border-indigo-600 focus:outline-none focus:ring-1"
           />
@@ -156,6 +158,8 @@ onMounted(async () => {
             id="last_name"
             placeholder="Ingrese sus apellidos"
             type="text"
+            required
+            autocomplete="family-name"
             class="mt-1 bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-900 dark:border-gray-700 dark:placeholder-gray-400 dark:text-gray-200 dark:focus:ring-indigo-600 dark:focus:border-indigo-600 focus:outline-none focus:ring-1"
           />
           <span v-if="errors.last_name" class="text-sm text-red-400">{{ errors.last_name }}</span>
@@ -172,6 +176,8 @@ onMounted(async () => {
           v-bind="emailAttrs"
           id="email"
           type="email"
+          required
+          autocomplete="email"
           placeholder="Ingrese su correo electrónico"
           class="mt-1 bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-900 dark:border-gray-700 dark:placeholder-gray-400 dark:text-gray-200 dark:focus:ring-indigo-600 dark:focus:border-indigo-600 focus:outline-none focus:ring-1"
         />
@@ -190,6 +196,8 @@ onMounted(async () => {
             id="password"
             placeholder="Digite su contraseña"
             :type="showPassword ? 'text' : 'password'"
+            required
+            autocomplete="new-password"
             class="mt-1 bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 pr-10 dark:bg-gray-900 dark:border-gray-700 dark:placeholder-gray-400 dark:text-gray-200 dark:focus:ring-indigo-600 dark:focus:border-indigo-600 focus:outline-none focus:ring-1"
           />
           <button
@@ -222,6 +230,8 @@ onMounted(async () => {
             id="password_confirmation"
             placeholder="Confirme su contraseña"
             :type="showPasswordConfirmation ? 'text' : 'password'"
+            required
+            autocomplete="new-password"
             class="mt-1 bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 pr-10 dark:bg-gray-900 dark:border-gray-700 dark:placeholder-gray-400 dark:text-gray-200 dark:focus:ring-indigo-600 dark:focus:border-indigo-600 focus:outline-none focus:ring-1"
           />
           <button

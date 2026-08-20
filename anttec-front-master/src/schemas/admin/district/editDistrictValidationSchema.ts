@@ -37,6 +37,7 @@ export const editDistrictSchema = object({
     .optional()
     .transform((value, originalValue) => (originalValue === '' ? null : value))
     .required('El precio de delivery es obligatorio')
+    .min(0, 'El precio de delivery no puede ser negativo')
     .test('decimal-2', 'El precio de compra debe tener máximo 2 decimales', (value) => {
       if (value === undefined) return true
       return /^\d+(\.\d{1,2})?$/.test(value.toString())

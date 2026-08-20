@@ -29,6 +29,7 @@ export const editCheckoutAddressSchema = object({
     .optional()
     .transform((value, originalValue) => (originalValue === '' ? null : value))
     .required('El número de calle obligatorio')
+    .min(0, 'El número de calle no puede ser negativo')
     .integer('Debe ser un número entero'),
   reference: string()
     .optional()

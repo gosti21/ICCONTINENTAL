@@ -121,6 +121,7 @@ onMounted(async () => {
           type="email"
           name="email"
           autocomplete="email"
+          required
           class="mt-1 bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-orange-500 focus:border-orange-500 block w-full p-2.5 dark:bg-gray-900 dark:border-gray-700 dark:placeholder-gray-400 dark:text-gray-200 focus:outline-none focus:ring-1"
         />
         <span class="text-red-400">{{ errors.email }}</span>
@@ -137,6 +138,7 @@ onMounted(async () => {
             id="password"
             name="password"
             autocomplete="current-password"
+            required
             :type="showPassword ? 'text' : 'password'"
             class="mt-1 bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-orange-500 focus:border-orange-500 block w-full p-2.5 pr-10 dark:bg-gray-900 dark:border-gray-700 dark:placeholder-gray-400 dark:text-gray-200 focus:outline-none focus:ring-1"
           />

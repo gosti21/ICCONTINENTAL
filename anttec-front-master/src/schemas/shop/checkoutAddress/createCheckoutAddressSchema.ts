@@ -27,6 +27,7 @@ export const createCheckoutAddressSchema = object({
   street_number: number()
     .transform((value, originalValue) => (originalValue === '' ? null : value))
     .required('El número de calle obligatorio')
+    .min(0, 'El número de calle no puede ser negativo')
     .integer('Debe ser un número entero'),
   reference: string()
     .required('La referencia es obligatorio')

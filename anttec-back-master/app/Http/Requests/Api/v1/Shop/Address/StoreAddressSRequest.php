@@ -30,6 +30,7 @@ class StoreAddressSRequest extends FormRequest
             'street_number' => [
                 'required',
                 'integer:strict',
+                'min:0',
             ],
             'reference' => [
                 'required',

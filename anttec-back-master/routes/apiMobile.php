@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\v1\Mobile\BrandMController;
 use App\Http\Controllers\Api\v1\Mobile\CartMController;
 use App\Http\Controllers\Api\v1\Mobile\CategoryMController;
 use App\Http\Controllers\Api\v1\Mobile\CustomerMController;
+use App\Http\Controllers\Api\v1\Mobile\DashboardMController;
 use App\Http\Controllers\Api\v1\Mobile\MethodPaymentMController;
 use App\Http\Controllers\Api\v1\Mobile\OrderMController;
 use App\Http\Controllers\Api\v1\Mobile\ProductMController;
@@ -12,6 +13,7 @@ use App\Http\Controllers\Api\v1\Mobile\VoucherMController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('categories', [CategoryMController::class, 'getAllList'])->name('categories.list');
+Route::get('dashboard', [DashboardMController::class, 'show'])->name('dashboard.show');
 Route::post('orders', [OrderMController::class, 'store'])->name('orders.store');
 Route::get('orders', [OrderMController::class, 'getAll'])->name('orders.getAll');
 Route::get('brands', [BrandMController::class, 'getAllList'])->name('brands.list');
