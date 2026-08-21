@@ -13,14 +13,14 @@ class BranchSeeder extends Seeder
     {
         $branch = Branch::firstOrCreate([
             'name' => 'Sucursal Principal',
-            'email' => 'anttecshop@gmail.com',
+            'email' => 'superadmin@gmail.com',
         ]);
 
         $preix = Prefix::first();
 
         if ($branch->phone === null) {
             $branch->phone()->create([
-                'number' => 964645037,
+                'number' => 906660509,
                 'prefix_id' => $preix->id
             ]);
         }

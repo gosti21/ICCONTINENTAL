@@ -48,7 +48,7 @@ onMounted(async () => {
           <a href="#productos-destacados" class="inline-flex items-center justify-center gap-2 rounded-xl bg-orange-600 px-6 py-3.5 font-bold text-white shadow-lg shadow-orange-950/30 transition hover:-translate-y-0.5 hover:bg-orange-500">
             Explorar productos <font-awesome-icon icon="fa-solid fa-angles-right" />
           </a>
-          <a href="https://wa.me/51964645037" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-2 rounded-xl border border-white/25 bg-white/10 px-6 py-3.5 font-semibold text-white backdrop-blur-sm transition hover:bg-white/20">
+          <a href="https://wa.me/51906660509" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-2 rounded-xl border border-white/25 bg-white/10 px-6 py-3.5 font-semibold text-white backdrop-blur-sm transition hover:bg-white/20">
             <font-awesome-icon icon="fa-brands fa-whatsapp" /> Hablar con un asesor
           </a>
         </div>

@@ -98,8 +98,8 @@ watch(isCategoriesOpen, (open) => {
               <!-- Contacto -->
               <div class="hidden md:flex flex-col text-center">
                 <span class="text-gray-300">Contáctanos</span>
-                <a href="https://wa.me/51964645037" target="__blank" class="hover:underline">
-                  <span class="font-bold text-gray-200">964 645 037</span>
+                <a href="https://wa.me/51906660509" target="__blank" class="hover:underline">
+                  <span class="font-bold text-gray-200">906 660 509</span>
                 </a>
               </div>
 

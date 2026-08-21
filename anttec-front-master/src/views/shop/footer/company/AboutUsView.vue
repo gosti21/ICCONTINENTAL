@@ -44,6 +44,15 @@ import logo from '@/assets/img/logo.png'
           </div>
         </section>
         <section>
+          <h3 class="text-xl dark:text-gray-200 font-medium mb-2">Información empresarial</h3>
+          <div class="mb-6 dark:text-gray-300">
+            <p><strong>Razón social:</strong> EMPRESA DE TRANSPORTES Y SERVICIOS MULTIPLES S.D.A. GROUP SOCIEDAD ANONIMA CERRADA</p>
+            <p><strong>RUC:</strong> 20568105363</p>
+            <p><strong>Estado:</strong> Activo y habido</p>
+            <p><strong>Domicilio fiscal:</strong> Av. Alameda Las Flores N.° 418, Barrio Yauris, Huancayo, Junín.</p>
+          </div>
+        </section>
+        <section>
           <h3 class="text-xl dark:text-gray-200 font-medium mb-2">Nuestra Misión</h3>
           <p class="mb-6 dark:text-gray-300">
             Brindar soluciones tecnológicas de alta calidad en periféricos gamer y de oficina,

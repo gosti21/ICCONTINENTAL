@@ -22,8 +22,8 @@ import logo from '@/assets/img/logo.png'
                 class="flex flex-col sm:flex-row text-center gap-1 sm:gap-3 text-sm sm:text-base"
               >
                 <span class="text-gray-300">¿Necesitas ayuda para comprar?</span>
-                <a href="https://wa.me/51964645037" target="__blank" class="hover:underline">
-                  <span class="font-bold text-gray-200">964 645 037</span>
+                <a href="https://wa.me/51906660509" target="__blank" class="hover:underline">
+                  <span class="font-bold text-gray-200">906 660 509</span>
                 </a>
               </div>
             </nav>

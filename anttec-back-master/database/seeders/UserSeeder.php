@@ -13,7 +13,7 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         $user = User::firstOrCreate(
-            ['email' => 'anttecshop@gmail.com'],
+            ['email' => 'superadmin@gmail.com'],
             [
                 'name' => 'Jhonny Stevens',
                 'last_name' => 'Romero Linares',
@@ -38,7 +38,7 @@ class UserSeeder extends Seeder
             $preix = Prefix::first();
 
             $employee->phone()->create([
-                'number' => 964645037,
+                'number' => 906660509,
                 'prefix_id' => $preix->id
             ]);
         }

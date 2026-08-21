@@ -128,10 +128,10 @@ import logo from '@/assets/img/logo.png'
             <span
               >Teléfono:
               <a
-                href="https://wa.me/51964645037"
+                href="https://wa.me/51906660509"
                 target="__blank"
                 class="hover:text-gray-200 hover:underline"
-                >+51 964 645 037</a
+                >+51 906 660 509</a
               ></span
             >
           </p>

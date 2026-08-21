@@ -24,11 +24,11 @@
 
             <p class="text-sm font-medium mt-4 mb-1">WhatsApp</p>
             <a
-              href="https://wa.me/51964645037"
+              href="https://wa.me/51906660509"
               target="_blank"
               class="text-sm hover:text-white transition"
             >
-              +51 964 645 037
+              +51 906 660 509
             </a>
 
             <p class="text-sm font-medium mt-4 mb-1">Correo</p>
@@ -96,6 +96,12 @@
       <!-- DIVIDER -->
       <hr class="my-10 border-gray-400" />
 
+      <div class="mb-6 text-center text-xs leading-5 text-gray-400">
+        <p>EMPRESA DE TRANSPORTES Y SERVICIOS MULTIPLES S.D.A. GROUP SOCIEDAD ANONIMA CERRADA</p>
+        <p>RUC 20568105363</p>
+        <p>Av. Alameda Las Flores N.° 418, Barrio Yauris, Huancayo, Junín</p>
+      </div>
+
       <!-- BOTTOM -->
       <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
         <span class="text-sm"> EL MUNDO DEL PERNO © 2026. Todos los derechos reservados </span>
@@ -110,7 +116,7 @@
           </a>
 
           <a
-            href="https://api.whatsapp.com/send?phone=51964645037"
+            href="https://api.whatsapp.com/send?phone=51906660509"
             target="_blank"
             class="hover:text-white transition"
           >
