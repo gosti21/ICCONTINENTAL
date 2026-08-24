@@ -24,6 +24,7 @@ class BranchVariantResource extends JsonResource
                     'name' => $this->variant->product->name,
                     'model' => $this->variant->product->model,
                     'brand' => $this->variant->product->brand?->name,
+                    'status' => $this->variant->product->status,
                 ];
             }),
             'features' => $this->whenLoaded('variant', function () {
