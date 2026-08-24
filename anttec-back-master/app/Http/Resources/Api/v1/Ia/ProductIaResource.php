@@ -34,7 +34,9 @@ class ProductIaResource extends JsonResource
             // Variantes con sus características
             'variants' => $this->variants->map(function ($variant) {
                 return [
-                    'id' => $variant->branches->first()->pivot->id,
+                    // La ficha pública recibe el ID real de variants, no el ID
+                    // de la relación branch_variant (inventario por sucursal).
+                    'id' => $variant->id,
                     'sku' => $variant->sku,
                     'price' => (float) $variant->selling_price,
 

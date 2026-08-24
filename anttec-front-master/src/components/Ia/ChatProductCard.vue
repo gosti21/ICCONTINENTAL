@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { productIAI } from '@/interfaces/Ia/ChatRecommendInterface';
+import { useChatStore } from '@/stores/useChatStore';
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 
@@ -9,6 +10,7 @@ interface Props {
 
 const props = defineProps<Props>()
 const router = useRouter()
+const chatStore = useChatStore()
 
 // Precio mínimo de las variantes
 const minPrice = computed(() => {
@@ -38,13 +40,18 @@ const preferredVariant = computed(() => {
   return [...props.product.variants].sort((a, b) => a.price - b.price)[0]
 })
 
-function goToProduct() {
+async function goToProduct() {
   const bestVariant = preferredVariant.value
 
   if (bestVariant) {
-    router.push({
-      path: `/variant/product/${props.product.id}/variant/${bestVariant.id}`,
+    await router.push({
+      name: 'shop.variant.show',
+      params: {
+        productId: props.product.id,
+        variantId: bestVariant.id,
+      },
     })
+    chatStore.closeChat()
   }
 }
 </script>
@@ -101,7 +108,7 @@ function goToProduct() {
         @click.stop="goToProduct"
         class="px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 transition-all duration-200 transform hover:scale-105"
       >
-        Comprar ahora
+        Ver producto
         <i class="fas fa-arrow-right ml-1"></i>
       </button>
     </div>
