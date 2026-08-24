@@ -10,7 +10,6 @@ import type { BarcodeItemI } from '@/interfaces/admin/variant/BarcodeInterface'
 import type { variantI, variantsI } from '@/interfaces/admin/variant/variantInterface'
 import VariantService from '@/services/admin/VariantService'
 import ReportService from '@/services/admin/ReportService'
-import IaService from '@/services/ia/IaService'
 import Swal from 'sweetalert2'
 import { computed, onMounted, ref, watch } from 'vue'
 import BarcodeCartModal from './components/BarcodeCartModal.vue'
@@ -19,7 +18,6 @@ import PaginationControls from '@/components/Admin/PaginationControls.vue'
 
 const variantService = new VariantService()
 const reportService = new ReportService()
-const iaService = new IaService()
 
 useBreadcrumb([{ name: 'Dashboard', route: 'admin.dashboard' }, { name: 'Inventario' }])
 
@@ -141,26 +139,6 @@ const openCart = () => {
   barcodeCartModalRef.value?.open()
 }
 
-const syncCatalog = async () => {
-  try {
-    useSweetAlert({
-      title: 'Sincronizando...',
-      text: 'Sincronizando el catálogo con la IA',
-      icon: 'loading',
-    })
-    await iaService.syncCatalog()
-    Swal.close()
-    useSweetAlert({
-      title: 'Sincronización Exitosa',
-      text: 'Catálogo sincronizado exitosamente',
-      icon: 'success',
-    })
-  } catch (error) {
-    useSweetAlert({ title: 'Algo salió mal', text: 'Intenta de nuevo', icon: 'error', timer: 0 })
-    console.log(error)
-  }
-}
-
 // ✅ Funciones para reporte de stock bajo
 const openLowStockModal = () => {
   showLowStockModal.value = true
@@ -241,12 +219,6 @@ const generateLowStockReport = async () => {
         <span>Reporte Stock Bajo</span>
       </button>
 
-      <button
-        @click="syncCatalog"
-        class="px-6 py-2.5 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-300 rounded-lg transition-colors duration-200 dark:bg-indigo-500 dark:hover:bg-indigo-600 dark:focus:ring-indigo-800 cursor-pointer"
-      >
-        Sincronizar catálogo con la IA
-      </button>
     </div>
 
     <AnimationLoader v-if="isLoading" />

@@ -69,7 +69,8 @@ class OrderRepository implements OrderInterface
                             $branchVariant->increment('stock', $item->pivot->quantity);
                         }
 
-                        dispatch(new FollowUpShipmentEmail($order, 'refunded', 'order'));
+                        FollowUpShipmentEmail::dispatch($order, 'refunded', 'order')
+                            ->afterResponse();
                     });
                 break;
             case 'processing':
@@ -79,7 +80,8 @@ class OrderRepository implements OrderInterface
                 $order->shipment()->update([
                     'status' => 'preparing'
                 ]);
-                dispatch(new FollowUpShipmentEmail($order, 'processing', 'order'));
+                FollowUpShipmentEmail::dispatch($order, 'processing', 'order')
+                    ->afterResponse();
                 break;
             default:
                 $order->update([
