@@ -33,6 +33,7 @@ const [lastName, lastNameAttrs] = defineField('last_name')
 
 // ─── Búsqueda ────────────────────────────────────────
 const isSearching = ref(false)
+const resolvedDocumentKey = ref('')
 
 const canSearchDNI = computed(() => {
   return documentType.value === 'DNI' && documentNumber.value.length === 8
@@ -45,6 +46,7 @@ const documentPlaceholder = computed(() => {
 const searchDNI = async () => {
   if (!canSearchDNI.value) return
 
+  const requestedDocument = documentNumber.value
   isSearching.value = true
   setFieldValue('name', '')
   setFieldValue('last_name', '')
@@ -52,10 +54,14 @@ const searchDNI = async () => {
   try {
     useSweetAlert({ title: 'Buscando...', text: 'Consultando DNI', icon: 'loading' })
 
-    const customer = await customerService.getByDNI(documentNumber.value)
+    const customer = await customerService.getByDNI(requestedDocument)
 
     Swal.close()
 
+    // Ignorar una respuesta si el usuario cambió el documento durante la consulta.
+    if (documentNumber.value !== requestedDocument || documentType.value !== 'DNI') return
+
+    resolvedDocumentKey.value = `DNI:${requestedDocument}`
     setFieldValue('name', customer.name)
     setFieldValue('last_name', customer.last_name)
 
@@ -105,12 +111,22 @@ watch(documentType, () => {
   }
 })
 
+// Los nombres consultados solo son válidos para el documento que los originó.
+watch([documentType, documentNumber], ([type, number]) => {
+  if (!isMounted.value) return
+  if (`${type}:${number}` === resolvedDocumentKey.value) return
+
+  setFieldValue('name', '', false)
+  setFieldValue('last_name', '', false)
+})
+
 // ─── Cargar datos desde el store al montar ──────────
 onMounted(() => {
   const billing = checkoutState.value.billing
 
   // ✅ CORREGIDO: Validar que billing existe y es del tipo correcto
   if (billing && billing.type_voucher === 'boleta') {
+    resolvedDocumentKey.value = `${billing.document_type || 'DNI'}:${billing.document_number || ''}`
     resetForm({
       values: {
         document_type: billing.document_type || 'DNI',
@@ -120,6 +136,7 @@ onMounted(() => {
       },
     })
   } else {
+    resolvedDocumentKey.value = 'DNI:'
     // ✅ Si no hay billing válido, inicializar con valores por defecto
     resetForm({
       values: {

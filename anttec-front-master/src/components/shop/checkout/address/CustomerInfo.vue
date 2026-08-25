@@ -30,6 +30,8 @@ const [documentNumber, documentNumberAttrs] = defineField('document_number')
 
 // ✅ Estado para búsqueda de DNI
 const isSearchingDNI = ref(false)
+const isMounted = ref(false)
+const resolvedDocumentKey = ref('')
 const canSearchDNI = computed(() => {
   return documentType.value === 'DNI' && documentNumber.value.length === 8
 })
@@ -46,6 +48,7 @@ const searchDNI = async () => {
     return
   }
 
+  const requestedDocument = documentNumber.value
   isSearchingDNI.value = true
   setFieldValue('name', '')
   setFieldValue('last_name', '')
@@ -57,12 +60,16 @@ const searchDNI = async () => {
       icon: 'loading',
     })
 
-    const customer = await customerService.getByDNI(documentNumber.value)
+    const customer = await customerService.getByDNI(requestedDocument)
 
     Swal.close()
 
+    // Ignorar una respuesta si el usuario cambió el documento durante la consulta.
+    if (documentNumber.value !== requestedDocument || documentType.value !== 'DNI') return
+
     // ✅ SOLUCIÓN: Usar setFieldValue para actualizar solo campos específicos
     // Esto NO marca otros campos como "touched"
+    resolvedDocumentKey.value = `DNI:${requestedDocument}`
     setFieldValue('name', customer.name)
     setFieldValue('last_name', customer.last_name)
     setFieldValue('document_number', customer.document_number)
@@ -119,6 +126,7 @@ const searchDNI = async () => {
 // ✅ Cargar datos existentes del checkout al montar
 onMounted(() => {
   if (deliveryInfo.value?.reciber) {
+    resolvedDocumentKey.value = `${deliveryInfo.value.reciber.document_type || 'DNI'}:${deliveryInfo.value.reciber.document_number || ''}`
     setValues({
       name: deliveryInfo.value.reciber.name || '',
       last_name: deliveryInfo.value.reciber.last_name || '',
@@ -126,7 +134,22 @@ onMounted(() => {
       document_type: deliveryInfo.value.reciber.document_type || 'DNI',
       document_number: deliveryInfo.value.reciber.document_number || '',
     })
+  } else {
+    resolvedDocumentKey.value = 'DNI:'
   }
+
+  setTimeout(() => {
+    isMounted.value = true
+  }, 0)
+})
+
+// Vaciar identidad apenas se escriba o seleccione un documento diferente.
+watch([documentType, documentNumber], ([type, number]) => {
+  if (!isMounted.value) return
+  if (`${type}:${number}` === resolvedDocumentKey.value) return
+
+  setFieldValue('name', '')
+  setFieldValue('last_name', '')
 })
 
 // Sincronizar cambios con el store
