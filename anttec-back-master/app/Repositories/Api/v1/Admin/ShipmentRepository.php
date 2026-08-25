@@ -11,13 +11,54 @@ use App\Models\Shipment;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ShipmentRepository implements ShipmentInterface
 {
     public function getAll(int $pagination): LengthAwarePaginator
     {
+        $this->repairMissingShipments();
+
         return Shipment::latest() // Ordenar por más recientes primero
             ->paginate($pagination);
+    }
+
+    private function repairMissingShipments(): void
+    {
+        Order::query()
+            ->where('payment_status', 'paid')
+            ->whereDoesntHave('shipment')
+            ->whereNotNull('checkout_snapshot')
+            ->get()
+            ->each(function (Order $order) {
+                $snapshot = $order->checkout_snapshot;
+
+                if (! is_array($snapshot)
+                    || empty($snapshot['receiver_info'])
+                    || empty($snapshot['delivery_type'])
+                    || empty($snapshot['address_id'])) {
+                    return;
+                }
+
+                $deliveryType = $snapshot['delivery_type'];
+                $status = match ($order->status) {
+                    'processing' => 'preparing',
+                    'ready' => $deliveryType === 'store_pickup' ? 'ready_for_pickup' : 'dispatched',
+                    'completed' => $deliveryType === 'store_pickup' ? 'picked_up' : 'delivered',
+                    'cancelled', 'refunded' => 'cancelled',
+                    default => 'pending',
+                };
+
+                Shipment::firstOrCreate([
+                    'order_id' => $order->id,
+                ], [
+                    'receiver_info' => $snapshot['receiver_info'],
+                    'delivery_type' => $deliveryType,
+                    'shipment_cost' => $order->shipment_cost,
+                    'status' => $status,
+                    'address_id' => $snapshot['address_id'],
+                ]);
+            });
     }
 
     public function getById(int $id): Model
@@ -42,18 +83,20 @@ class ShipmentRepository implements ShipmentInterface
                     ));
                     break;
                 case 'picked_up':
-                    $shipment->update([
-                        'status' => $data['status'],
-                    ]);
-                    $shipment->order()->update([
-                        'status' => 'completed',
-                    ]);
-                    dispatch(new FollowUpShipmentEmail(
+                    DB::transaction(function () use ($data, $shipment) {
+                        $shipment->update([
+                            'status' => $data['status'],
+                        ]);
+                        $shipment->order()->update([
+                            'status' => 'completed',
+                        ]);
+                    });
+                    $this->dispatchEmailSafely(new FollowUpShipmentEmail(
                         $shipment->order,
                         'picked_up',
                         'shipment'
                     ));
-                    dispatch(new FollowUpShipmentEmail(
+                    $this->dispatchEmailSafely(new FollowUpShipmentEmail(
                         $shipment->order,
                         'completed',
                         'order'
@@ -173,6 +216,17 @@ class ShipmentRepository implements ShipmentInterface
             }
         }
 
-        return $shipment;
+        return $shipment->refresh();
+    }
+
+    private function dispatchEmailSafely(FollowUpShipmentEmail $job): void
+    {
+        try {
+            dispatch($job);
+        } catch (\Throwable $exception) {
+            Log::error('Shipment updated, but its notification could not be queued', [
+                'error' => $exception->getMessage(),
+            ]);
+        }
     }
 }

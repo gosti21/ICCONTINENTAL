@@ -3,38 +3,27 @@
 namespace App\Listeners;
 
 use App\Events\OrderCreated;
-use App\Jobs\CreateShipment;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Queue\InteractsWithQueue;
+use App\Contracts\Api\v1\Shop\ShipmentSInterface;
 use Illuminate\Support\Facades\Log;
 
-class CreateShipmentListener implements ShouldQueue
+class CreateShipmentListener
 {
-    use InteractsWithQueue;
-
     /**
      * Número de intentos del listener
      */
-    public $tries = 5;
-
-    public $queue = 'general';
-
     /**
      * Create the event listener.
      */
-    public function __construct()
-    {
-        //
-    }
+    public function __construct(
+        private readonly ShipmentSInterface $repository,
+    ) {}
 
     /**
      * Handle the event.
      */
     public function handle(OrderCreated $event): void
     {
-        CreateShipment::dispatch(
-            $event->dataShipment
-        );
+        $this->repository->create($event->dataShipment);
     }
 
     public function failed(OrderCreated $event, \Throwable $exception): void
