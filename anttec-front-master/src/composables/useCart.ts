@@ -5,6 +5,7 @@ import { useSweetAlert } from './useSweetAlert'
 import axios from 'axios'
 import { useSweetAlertToast } from './useSweetAlertToast'
 import { storeToRefs } from 'pinia' // ← IMPORTAR ESTO
+import Swal from 'sweetalert2'
 
 export function useCart() {
   const cartStore = useCartStore()
@@ -20,14 +21,30 @@ export function useCart() {
     try {
       await cartStore.addItem(branchVariantId, quantity)
 
-      useSweetAlertToast({
-        title: '¡Agregado!',
-        text: `${quantity} ${quantity === 1 ? 'producto agregado' : 'productos agregados'} al carrito`,
+      void Swal.fire({
+        title: quantity === 1 ? 'Producto agregado' : 'Productos agregados',
+        html: `<span class="cart-toast__message"><strong>${quantity}</strong> ${quantity === 1 ? 'unidad está' : 'unidades están'} lista${quantity === 1 ? '' : 's'} en tu carrito</span>`,
         icon: 'success',
-        timer: 2000,
+        iconColor: '#f97316',
+        timer: 3500,
+        timerProgressBar: true,
         toast: true,
         position: 'top-end',
-        showConfirmButton: false,
+        showConfirmButton: true,
+        confirmButtonText: 'Ver carrito',
+        showCloseButton: true,
+        customClass: {
+          popup: 'cart-toast',
+          icon: 'cart-toast__icon',
+          title: 'cart-toast__title',
+          htmlContainer: 'cart-toast__content',
+          confirmButton: 'cart-toast__button',
+          timerProgressBar: 'cart-toast__progress',
+          closeButton: 'cart-toast__close',
+        },
+        buttonsStyling: false,
+      }).then((result) => {
+        if (result.isConfirmed) cartStore.openDrawer()
       })
 
       return true
