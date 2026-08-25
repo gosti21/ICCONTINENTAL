@@ -5,6 +5,7 @@ namespace App\Repositories\Api\v1\Shop;
 use App\Contracts\Api\v1\Shop\ProductSInterface;
 use App\Filters\Api\v1\Shop\Products\ProductCategorySFilter;
 use App\Filters\Api\v1\Shop\Products\ProductSubcategorySFilter;
+use App\Filters\Api\v1\Shop\Products\ProductSearchSFilter;
 use App\Models\Product;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
@@ -41,6 +42,7 @@ class ProductSRepository implements ProductSInterface
             ]);
 
         $filters = [
+            ProductSearchSFilter::class,
             ProductCategorySFilter::class,
             ProductSubcategorySFilter::class,
         ];

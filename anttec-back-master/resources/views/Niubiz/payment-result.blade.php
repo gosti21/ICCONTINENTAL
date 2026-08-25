@@ -18,25 +18,38 @@
             align-items: center;
             justify-content: center;
             padding: 1rem;
-            transition: background-color 0.3s, color 0.3s;
+            position: relative;
+            background-image:
+                linear-gradient(135deg, rgba(8, 15, 24, 0.76), rgba(20, 20, 20, 0.58)),
+                url('/images/payment-machinery-bg.png');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: #172033;
         }
 
-        /* Light mode (default) */
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #1f2937;
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background-image: linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+            background-size: 44px 44px;
         }
 
         /* Dark mode */
         @media (prefers-color-scheme: dark) {
             body {
-                background: linear-gradient(135deg, #1e3a8a 0%, #581c87 100%);
+                background-image:
+                    linear-gradient(135deg, rgba(3, 8, 15, 0.84), rgba(15, 15, 15, 0.68)),
+                    url('/images/payment-machinery-bg.png');
                 color: #f3f4f6;
             }
 
             .card {
-                background: #1f2937 !important;
-                border-color: #374151 !important;
+                background: rgba(17, 24, 39, 0.96) !important;
+                border-color: rgba(245, 158, 11, 0.3) !important;
             }
 
             .info-box {
@@ -45,23 +58,34 @@
             }
 
             .button {
-                background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%) !important;
+                background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%) !important;
+                color: #111827 !important;
             }
 
             .button:hover {
-                background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%) !important;
+                background: linear-gradient(135deg, #fbbf24 0%, #f97316 100%) !important;
+            }
+
+            .button.secondary {
+                background: transparent !important;
+                color: #e5e7eb !important;
+                border-color: #4b5563 !important;
             }
         }
 
         .container {
-            max-width: 600px;
+            max-width: 680px;
             width: 100%;
+            position: relative;
+            z-index: 1;
         }
 
         .card {
-            background: white;
-            border-radius: 1rem;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            background: rgba(255, 255, 255, 0.96);
+            border: 1px solid rgba(255, 255, 255, 0.52);
+            border-radius: 1.5rem;
+            box-shadow: 0 32px 80px rgba(0, 0, 0, 0.48);
+            backdrop-filter: blur(16px);
             overflow: hidden;
             animation: slideUp 0.5s ease-out;
         }
@@ -78,12 +102,14 @@
         }
 
         .header {
-            padding: 2rem;
+            padding: 2.2rem 2rem 2rem;
             text-align: center;
+            position: relative;
         }
 
         .header.success {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            background: linear-gradient(145deg, #111827 0%, #22262e 72%, #382817 100%);
+            border-bottom: 4px solid #f59e0b;
         }
 
         .header.error {
@@ -91,11 +117,12 @@
         }
 
         .icon-container {
-            width: 80px;
-            height: 80px;
+            width: 74px;
+            height: 74px;
             margin: 0 auto 1rem;
-            background: white;
-            border-radius: 50%;
+            background: rgba(16, 185, 129, 0.13);
+            border: 2px solid #34d399;
+            border-radius: 22px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -116,7 +143,7 @@
         }
 
         .icon.success {
-            color: #10b981;
+            color: #34d399;
         }
 
         .icon.error {
@@ -125,7 +152,7 @@
 
         .header h1 {
             color: white;
-            font-size: 1.875rem;
+            font-size: 2rem;
             font-weight: bold;
             margin-bottom: 0.5rem;
         }
@@ -133,6 +160,29 @@
         .header p {
             color: rgba(255, 255, 255, 0.9);
             font-size: 1rem;
+            line-height: 1.6;
+            max-width: 510px;
+            margin: 0 auto;
+        }
+
+        .brand-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            color: #fbbf24;
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+        }
+
+        .brand-label::before,
+        .brand-label::after {
+            content: '';
+            width: 24px;
+            height: 2px;
+            background: #f59e0b;
         }
 
         .content {
@@ -140,9 +190,10 @@
         }
 
         .info-box {
-            background: #f3f4f6;
-            border: 2px solid #e5e7eb;
-            border-radius: 0.75rem;
+            background: linear-gradient(145deg, #f8fafc, #eef1f4);
+            border: 1px dashed #aeb5bf;
+            border-left: 5px solid #f59e0b;
+            border-radius: 0.9rem;
             padding: 1.5rem;
             margin-bottom: 1.5rem;
         }
@@ -170,6 +221,25 @@
             font-size: 1rem;
         }
 
+        .available {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            color: #047857;
+            background: #d1fae5;
+            border-radius: 999px;
+            padding: 0.35rem 0.65rem;
+            font-size: 0.8rem;
+        }
+
+        .available::before {
+            content: '';
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #10b981;
+        }
+
         @media (prefers-color-scheme: dark) {
             .info-label {
                 color: #9ca3af;
@@ -183,21 +253,33 @@
         .button {
             width: 100%;
             padding: 1rem 1.5rem;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
+            background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
+            color: #111827;
+            border: 1px solid transparent;
             border-radius: 0.75rem;
             font-size: 1rem;
             font-weight: bold;
             cursor: pointer;
             transition: all 0.3s;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            box-shadow: 0 10px 24px rgba(234, 88, 12, 0.24);
         }
 
         .button:hover {
-            background: linear-gradient(135deg, #5568d3 0%, #6b3fa0 100%);
+            background: linear-gradient(135deg, #fbbf24 0%, #f97316 100%);
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
             transform: translateY(-2px);
+        }
+
+        .button.secondary {
+            background: transparent;
+            color: #374151;
+            border-color: #cbd5e1;
+            box-shadow: none;
+        }
+
+        .button.secondary:hover {
+            background: #f1f5f9;
+            border-color: #94a3b8;
         }
 
         .countdown {
@@ -242,6 +324,12 @@
                 padding: 1.5rem;
             }
 
+            body {
+                align-items: flex-start;
+                background-position: 38% center;
+                padding-top: 1rem;
+            }
+
             .icon-container {
                 width: 60px;
                 height: 60px;
@@ -258,6 +346,7 @@
         <div class="card">
             <!-- Header -->
             <div class="header {{ $success ? 'success' : 'error' }}">
+                <div class="brand-label">El Mundo del Perno</div>
                 <div class="icon-container">
                     @if($success)
                         <div class="icon success">✓</div>
@@ -283,7 +372,7 @@
                         @if(isset($voucherPath))
                             <div class="info-row">
                                 <span class="info-label">Comprobante electrónico</span>
-                                <span class="info-value">Disponible</span>
+                                <span class="info-value available">Disponible</span>
                             </div>
                         @endif
 
@@ -298,16 +387,16 @@
 
                 @if(isset($voucherPath))
                     <button class="button" onclick="downloadVoucher()" style="margin-bottom:1rem;">
-                        Descargar comprobante
+                        ↓&nbsp;&nbsp;Descargar comprobante
                     </button>
                 @endif
 
-                <button class="button" onclick="redirectNow()">
-                    {{ $success ? 'Ir al inicio' : 'Reintentar' }}
+                <button class="button secondary" onclick="redirectNow()">
+                    {{ $success ? 'Volver a la tienda' : 'Reintentar' }}
                 </button>
 
                 <div class="countdown">
-                    Serás redirigido en <span id="countdown">5</span> segundos...
+                    Redirección automática en <span id="countdown">15</span> segundos
                 </div>
             </div>
         </div>

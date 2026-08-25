@@ -7,6 +7,7 @@ use App\Http\Resources\Api\v1\Shop\ProductSResource;
 use App\Http\Resources\Api\v1\Shop\ProductVariantSResource;
 use App\Services\Api\v1\Shop\ProductSService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class ProductSController extends Controller
 {
@@ -14,10 +15,12 @@ class ProductSController extends Controller
         protected ProductSService $service
     ) {}
 
-    public function getAll(): JsonResponse
+    public function getAll(Request $request): JsonResponse
     {
+        $limit = max(1, min($request->integer('limit', 15), 50));
+
         $array = ProductSResource::collection(
-            $this->service->getAll()
+            $this->service->getAll($limit)
         )->response()->getData(true);
 
         return response()->json([
