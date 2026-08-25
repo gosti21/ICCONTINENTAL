@@ -23,6 +23,60 @@
   background: #ea580c;
 }
 
+/* Aviso de credenciales incorrectas */
+.swal2-popup.login-error-alert {
+  width: min(420px, calc(100vw - 32px)) !important;
+  padding: 30px 28px 24px !important;
+  border: 1px solid #ffedd5 !important;
+  border-radius: 22px !important;
+  background: linear-gradient(145deg, #ffffff 0%, #fffaf5 100%) !important;
+  box-shadow: 0 24px 70px rgba(124, 45, 18, 0.18) !important;
+}
+
+.login-error-alert .login-error-alert__icon {
+  width: 64px !important;
+  height: 64px !important;
+  margin: 0 auto 18px !important;
+  border-width: 3px !important;
+}
+
+.login-error-alert .login-error-alert__title {
+  padding: 0 !important;
+  color: #1f2937 !important;
+  font-size: 24px !important;
+  font-weight: 800 !important;
+  line-height: 1.25 !important;
+}
+
+.login-error-alert .login-error-alert__content {
+  margin: 10px 0 0 !important;
+  padding: 0 !important;
+  color: #6b7280 !important;
+  font-size: 15px !important;
+  line-height: 1.55 !important;
+}
+
+.login-error-alert .swal2-actions {
+  width: 100% !important;
+  margin: 24px 0 0 !important;
+}
+
+.login-error-alert .login-error-alert__button {
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 12px 20px !important;
+  border-radius: 12px !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  box-shadow: 0 10px 24px rgba(234, 88, 12, 0.24) !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.login-error-alert .login-error-alert__button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px rgba(234, 88, 12, 0.3) !important;
+}
+
 /* Notificación de producto agregado al carrito */
 .swal2-popup.cart-toast {
   width: min(390px, calc(100vw - 24px)) !important;

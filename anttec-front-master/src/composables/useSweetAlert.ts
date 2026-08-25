@@ -15,6 +15,8 @@ interface sweetAlertI {
   cancelButtonColor?: string
   showConfirmButton?: boolean
   allowOutsideClick?: boolean
+  customClass?: Record<string, string>
+  iconColor?: string
 }
 
 export function useSweetAlert(options: sweetAlertI) {
@@ -31,6 +33,8 @@ export function useSweetAlert(options: sweetAlertI) {
     cancelButtonColor,
     showConfirmButton,
     allowOutsideClick,
+    customClass,
+    iconColor,
   } = options
 
   if (icon == 'loading') {
@@ -56,7 +60,9 @@ export function useSweetAlert(options: sweetAlertI) {
       ...(confirmButtonColor && { confirmButtonColor }),
       ...(cancelButtonColor && { cancelButtonColor }),
       ...(showConfirmButton !== undefined && { showConfirmButton }),
-      ...(allowOutsideClick !== undefined && { allowOutsideClick })
+      ...(allowOutsideClick !== undefined && { allowOutsideClick }),
+      ...(customClass && { customClass }),
+      ...(iconColor && { iconColor }),
     })
 
   }

@@ -76,10 +76,21 @@ const onSubmit = handleSubmit(async (values) => {
         setErrors(veeValidateErrors)
       } else if (status === 401) {
         useSweetAlert({
-          title: 'Credenciales inválidas',
-          text: 'El correo o la contraseña no son correctos.',
+          title: 'Contraseña incorrecta',
+          text: 'Revisa tus datos de acceso e inténtalo nuevamente.',
           icon: 'error',
           timer: 0,
+          timerProgressBar: false,
+          confirmButtonText: 'Volver a intentar',
+          confirmButtonColor: '#ea580c',
+          iconColor: '#f97316',
+          customClass: {
+            popup: 'login-error-alert',
+            icon: 'login-error-alert__icon',
+            title: 'login-error-alert__title',
+            htmlContainer: 'login-error-alert__content',
+            confirmButton: 'login-error-alert__button',
+          },
         })
       } else {
         useSweetAlert({
